@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Image, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { C, R, TOPIC_COLORS } from '../theme';
 import { REACTION_EMOJIS } from '../data/seed';
@@ -9,13 +9,14 @@ import { compact, timeAgo } from '../lib/format';
 import AvatarRenderer from '../avatar/AvatarRenderer';
 
 export function Avatar({
-  name, color, size = 40, avatar, photoUri,
+  name, color, size = 40, avatar, photoUri, animated,
 }: {
   name: string;
   color: string;
   size?: number;
   avatar?: AvatarConfig | null;
   photoUri?: string | null;
+  animated?: boolean;
 }) {
   const cfg = avatar ?? avatarFor(name);
   if (photoUri) {
@@ -27,8 +28,8 @@ export function Avatar({
     );
   }
   return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden', marginRight: 10 }}>
-      <AvatarRenderer config={cfg} size={size} />
+    <View style={{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden', marginRight: size >= 56 ? 0 : 10 }}>
+      <AvatarRenderer config={cfg} size={size} animated={animated ?? size >= 56} />
     </View>
   );
 }
@@ -38,6 +39,24 @@ export function InitialAvatar({ name, color, size = 40 }: { name: string; color:
     <View style={[s.avatar, { backgroundColor: color, width: size, height: size, borderRadius: size / 2 }]}>
       <Text style={[s.avatarText, { fontSize: size * 0.42 }]}>{name.charAt(0).toUpperCase()}</Text>
     </View>
+  );
+}
+
+function PollBar({ pct, mine }: { pct: number; mine: boolean }) {
+  const anim = React.useRef(new Animated.Value(0)).current;
+  React.useEffect(() => {
+    Animated.timing(anim, { toValue: pct, duration: 700, useNativeDriver: false }).start();
+  }, [pct, anim]);
+  return (
+    <Animated.View
+      style={[
+        s.optFill,
+        {
+          width: anim.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }),
+          backgroundColor: mine ? C.primary : C.secondary,
+        },
+      ]}
+    />
   );
 }
 
@@ -69,7 +88,7 @@ export function PollVote({
             }}
             style={[s.opt, mine && s.optMine]}
           >
-            <View style={[s.optFill, { width: `${pct}%`, backgroundColor: mine ? C.primary : C.secondary }]} />
+            <PollBar pct={pct} mine={mine} />
             <Text style={s.optText}>{o.text}</Text>
             <Text style={s.optPct}>{voted !== null ? `${pct}%` : 'vote'}</Text>
           </Pressable>
@@ -113,6 +132,7 @@ interface Props {
   onMarkPrediction?: (m: 'right' | 'wrong') => void;
   expanded?: boolean;
   onAvatarPress?: () => void;
+  shieldHint?: string;
 }
 
 export default function PostCard(p: Props) {
@@ -136,6 +156,9 @@ export default function PostCard(p: Props) {
   };
 
   const spoilerHidden = post.spoiler && !revealed;
+  const confirmText = p.shieldHint
+    ? `⚠️ Really reveal? You're on ep ${p.shieldHint} — tap again to confirm`
+    : '⚠️ Really reveal? Tap again to confirm';
 
   const body = (
     <>
@@ -159,7 +182,7 @@ export default function PostCard(p: Props) {
       {spoilerHidden && p.strictSpoiler ? (
         <Pressable style={s.spoilerBox} onPress={tapSpoiler}>
           <Text style={s.spoilerText}>
-            {confirming ? '⚠️ Really reveal? Tap again to confirm' : '⚠️ Spoiler hidden — tap to reveal'}
+            {confirming ? confirmText : '⚠️ Spoiler hidden — tap to reveal'}
           </Text>
         </Pressable>
       ) : (
@@ -168,7 +191,7 @@ export default function PostCard(p: Props) {
           {spoilerHidden ? (
             <Pressable style={s.spoilerBox} onPress={tapSpoiler}>
               <Text style={s.spoilerText}>
-                {confirming && p.strictSpoiler ? '⚠️ Really reveal? Tap again to confirm' : '⚠️ Spoiler hidden — tap to reveal'}
+                {confirming && p.strictSpoiler ? confirmText : '⚠️ Spoiler hidden — tap to reveal'}
               </Text>
             </Pressable>
           ) : (

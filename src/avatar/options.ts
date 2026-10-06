@@ -22,7 +22,16 @@ export const HAIRS = ['Spiky', 'Bob', 'Long', 'Ponytail', 'Buns', 'Messy', 'Buzz
 export const HAIR_COLORS = ['#23232B', '#6B4A2F', '#C0392B', '#E8B93C', '#58B368', '#4AA8DE', '#9B5DE5', '#F15BB5'];
 export const HAIR_COLOR_NAMES = ['Midnight', 'Chestnut', 'Crimson', 'Blonde', 'Mint', 'Sky', 'Violet', 'Bubblegum'];
 
-export const ACCESSORIES = ['None', 'Star headphones', 'Glasses', 'Star pin', 'Headband', 'Cat ears'];
+export const ACCESSORIES = ['None', 'Star headphones', 'Glasses', 'Star pin', 'Headband', 'Cat ears', 'Beanie', 'Santa hat', 'Flower crown'];
+
+export const MOODS = [
+  { name: '😌 Chill', eyes: 0, mouth: 4 },
+  { name: '😊 Happy', eyes: 2, mouth: 0 },
+  { name: '🤩 Hyped', eyes: 5, mouth: 1 },
+  { name: '😴 Soft', eyes: 3, mouth: 5 },
+  { name: '😎 Cool', eyes: 1, mouth: 2 },
+  { name: '😃 Excited', eyes: 0, mouth: 3 },
+];
 
 export const BGS: [string, string][] = [
   ['#FF4D6D', '#8B5CF6'],
@@ -59,7 +68,7 @@ export function avatarFor(name: string): AvatarConfig {
     mouth: mod(pick(6, 11), 6),
     hair: mod(pick(8, 13), 8),
     hairColor: mod(h + pick(8, 15), 8),
-    accessory: mod(pick(6, 17), 6),
+    accessory: mod(pick(9, 17), ACCESSORIES.length),
     bg: mod(h + pick(8, 19), 8),
   };
 }
@@ -68,6 +77,16 @@ export function randomAvatar(): AvatarConfig {
   const r = (n: number) => Math.floor(Math.random() * n);
   return {
     skin: r(6), face: r(3), eyes: r(6), eyeColor: r(6), brows: r(4),
-    mouth: r(6), hair: r(8), hairColor: r(8), accessory: r(6), bg: r(8),
+    mouth: r(6), hair: r(8), hairColor: r(8), accessory: r(ACCESSORIES.length), bg: r(8),
   };
+}
+
+/** Randomize a single category, keeping the rest. */
+export function randomizeCategory(config: AvatarConfig, key: keyof AvatarConfig): AvatarConfig {
+  const counts: Record<keyof AvatarConfig, number> = {
+    skin: SKINS.length, face: FACES.length, eyes: EYES.length, eyeColor: EYE_COLORS.length,
+    brows: BROWS.length, mouth: MOUTHS.length, hair: HAIRS.length, hairColor: HAIR_COLORS.length,
+    accessory: ACCESSORIES.length, bg: BGS.length,
+  };
+  return { ...config, [key]: Math.floor(Math.random() * counts[key]) };
 }

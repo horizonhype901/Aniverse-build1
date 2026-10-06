@@ -1,4 +1,4 @@
-import React, { useId } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import Svg, {
   Circle, Ellipse, Path, Polygon, Rect, Defs, LinearGradient, Stop,
 } from 'react-native-svg';
@@ -256,6 +256,33 @@ function renderAccessory(style: number, hc: string) {
       return <Path d="M54,86 Q100,60 146,86" stroke="#22D3EE" strokeWidth={10} fill="none" strokeLinecap="round" />;
     case 5: // cat ears (drawn before front hair by caller)
       return null;
+    case 6: // beanie
+      return (
+        <>
+          <Path d="M50,80 C54,38 74,30 100,30 C126,30 146,38 150,80 C130,66 70,66 50,80 Z" fill="#22D3EE" />
+          <Rect x={48} y={70} width={104} height={16} rx={8} fill="#1B9CC4" />
+          <Circle cx={100} cy={28} r={9} fill="#E8F6FF" />
+        </>
+      );
+    case 7: // santa hat
+      return (
+        <>
+          <Path d="M58,62 C80,18 120,14 156,40 C130,36 108,44 92,62 Z" fill="#E63946" />
+          <Ellipse cx={100} cy={64} rx={52} ry={11} fill="#F1FAEE" />
+          <Circle cx={158} cy={42} r={10} fill="#F1FAEE" />
+        </>
+      );
+    case 8: // flower crown
+      return (
+        <>
+          {[62, 81, 100, 119, 138].map((x, i) => (
+            <React.Fragment key={x}>
+              <Circle cx={x} cy={58 + (i % 2) * 6} r={8} fill={['#F15BB5', '#FFC94D', '#F472B6', '#FF8FA3', '#E8B93C'][i]} />
+              <Circle cx={x} cy={58 + (i % 2) * 6} r={3} fill="#FFF3D6" />
+            </React.Fragment>
+          ))}
+        </>
+      );
     default:
       return null;
   }
@@ -272,13 +299,36 @@ function renderCatEars(hc: string) {
   );
 }
 
-export default function AvatarRenderer({ config, size = 96 }: { config: AvatarConfig; size?: number }) {
+function renderClosedEyes() {
+  return (
+    <>
+      {[76, 124].map((cx) => (
+        <Path key={cx} d={`M${cx - 10},114 Q${cx},119 ${cx + 10},114`} stroke={LASH} strokeWidth={4} fill="none" strokeLinecap="round" />
+      ))}
+    </>
+  );
+}
+
+export default function AvatarRenderer({ config, size = 96, animated = false }: {
+  config: AvatarConfig; size?: number; animated?: boolean;
+}) {
   const gid = useId().replace(/:/g, '');
   const skin = SKINS[config.skin] ?? SKINS[0];
   const face = FACE_DIMS[config.face] ?? FACE_DIMS[0];
   const ec = EYE_COLORS[config.eyeColor] ?? EYE_COLORS[0];
   const hc = HAIR_COLORS[config.hairColor] ?? HAIR_COLORS[0];
   const [bg0, bg1] = BGS[config.bg] ?? BGS[0];
+
+  const [blink, setBlink] = useState(false);
+  useEffect(() => {
+    if (!animated) return;
+    let close: ReturnType<typeof setTimeout>;
+    const t = setInterval(() => {
+      setBlink(true);
+      close = setTimeout(() => setBlink(false), 150);
+    }, 3800);
+    return () => { clearInterval(t); clearTimeout(close); };
+  }, [animated]);
 
   return (
     <Svg width={size} height={size} viewBox="0 0 200 200">
@@ -300,7 +350,7 @@ export default function AvatarRenderer({ config, size = 96 }: { config: AvatarCo
       <Ellipse cx={100} cy={108} rx={face.rx} ry={face.ry} fill={skin} />
       {config.accessory === 5 && renderCatEars(hc)}
       {renderBrows(config.brows)}
-      {renderEyes(config.eyes, ec, skin)}
+      {blink ? renderClosedEyes() : renderEyes(config.eyes, ec, skin)}
       <Circle cx={100} cy={134} r={2} fill="#000" opacity={0.12} />
       {renderMouth(config.mouth)}
       {renderHairFront(config.hair, hc)}

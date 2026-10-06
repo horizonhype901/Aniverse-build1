@@ -10,7 +10,7 @@ import { C, R } from '../theme';
 import { store } from '../lib/store';
 import { Post, Profile, WatchEntry } from '../types';
 import { searchTracks, TrackResult } from '../lib/music';
-import { BANNERS, BANNER_NAMES } from './options';
+import { BANNERS, BANNER_NAMES, THEMES } from './options';
 import { BannerThumb, BannerView } from './Banner';
 import AnthemCard from './AnthemCard';
 
@@ -85,8 +85,13 @@ export default function ProfileStudioScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     previewPlayer.pause();
     setPlayingUrl(null);
+    const hist = [profile?.anthem, ...(profile?.anthemHistory ?? [])]
+      .filter(Boolean)
+      .filter((a, i, arr) => arr.findIndex((x) => x!.track === a!.track && x!.artist === a!.artist) === i)
+      .slice(0, 5) as { track: string; artist: string; artwork?: string | null; previewUrl?: string | null }[];
     update({
       anthem: { track: t.track, artist: t.artist, artwork: t.artwork, previewUrl: t.previewUrl },
+      anthemHistory: hist,
     });
   };
 
@@ -148,6 +153,17 @@ export default function ProfileStudioScreen() {
           )}
         </View>
 
+        <Text style={s.sec}>🎨 Profile theme</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12 }}>
+          {THEMES.map((t, i) => (
+            <Pressable key={t.name} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); update({ theme: i }); }}
+              style={[s.themeChip, (profile.theme ?? 0) === i && s.themeActive]}>
+              <View style={[s.themeDot, { backgroundColor: t.accent }]} />
+              <Text style={s.themeName}>{t.name}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+
         <Text style={s.sec}>🎵 Profile anthem</Text>
         <View style={{ paddingHorizontal: 12 }}>
           {profile.anthem && <AnthemCard anthem={profile.anthem} />}
@@ -185,6 +201,24 @@ export default function ProfileStudioScreen() {
             </View>
           ))}
           <Text style={s.hint}>Previews play right here; the Spotify button opens the track in Spotify.</Text>
+          {(profile.anthemHistory ?? []).length > 0 && (
+            <>
+              <Text style={s.subSec}>🕘 Previously</Text>
+              {(profile.anthemHistory ?? []).map((a, i) => (
+                <View key={i} style={s.trackRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.trackName} numberOfLines={1}>{a.track}</Text>
+                    <Text style={s.trackArtist} numberOfLines={1}>{a.artist}</Text>
+                  </View>
+                  <Pressable style={s.setBtn} onPress={() => setAnthem({
+                    track: a.track, artist: a.artist, artwork: a.artwork ?? null, previewUrl: a.previewUrl ?? null,
+                  })}>
+                    <Text style={s.setBtnText}>Restore</Text>
+                  </Pressable>
+                </View>
+              ))}
+            </>
+          )}
         </View>
 
         <Text style={s.sec}>⭐ Favorite anime ({showcase.length}/3)</Text>
@@ -232,6 +266,11 @@ const s = StyleSheet.create({
   headerTitle: { color: C.text, fontSize: 17, fontWeight: '800' },
   previewLink: { color: C.secondary, fontWeight: '800', fontSize: 14, width: 70, textAlign: 'right' },
   sec: { color: C.text, fontWeight: '800', fontSize: 16, marginHorizontal: 16, marginTop: 18, marginBottom: 8 },
+  subSec: { color: C.muted, fontWeight: '700', fontSize: 13, marginTop: 12, marginBottom: 4 },
+  themeChip: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.border, backgroundColor: C.card, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 9, marginRight: 8 },
+  themeActive: { borderColor: C.primary, backgroundColor: C.card2 },
+  themeDot: { width: 16, height: 16, borderRadius: 8, marginRight: 8 },
+  themeName: { color: C.text, fontWeight: '700', fontSize: 13 },
   thumbActive: { borderWidth: 2, borderColor: C.primary, borderRadius: 10, padding: 2 },
   thumbName: { color: C.muted, fontSize: 10, marginTop: 4 },
   rowBtns: { flexDirection: 'row', paddingHorizontal: 12, marginTop: 10 },

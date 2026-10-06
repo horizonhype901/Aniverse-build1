@@ -30,6 +30,7 @@ export default function AnimeDetailScreen() {
   const [status, setStatus] = useState<WatchStatus | null>(null);
   const [note, setNote] = useState('');
   const [progress, setProgress] = useState<ProgressEntry | null>(null);
+  const [pace, setPace] = useState(0); // episodes per active day, learned
 
   useEffect(() => {
     (async () => {
@@ -46,6 +47,10 @@ export default function AnimeDetailScreen() {
         setNote(e?.note || '');
         const pg = await store.progress();
         setProgress(pg[animeId] || null);
+        // personal pace: episodes per active day, learned from check-ins
+        const days = await store.checkins();
+        const totalEps = Object.values(pg).reduce((a, e: any) => a + (e.watched || 0), 0);
+        setPace(days.length > 0 && totalEps > 0 ? totalEps / days.length : 0);
       }
     })();
   }, [animeId]);
@@ -105,10 +110,15 @@ export default function AnimeDetailScreen() {
   };
 
   const remaining = progress?.total ? Math.max(0, progress.total - progress.watched) : null;
-  const eta =
-    remaining !== null && remaining > 0
-      ? `≈ ${Math.floor((remaining * 24) / 60)}h ${(remaining * 24) % 60}m left`
-      : null;
+  const eta = (() => {
+    if (remaining === null || remaining <= 0) return null;
+    const hours = `${Math.floor((remaining * 24) / 60)}h ${(remaining * 24) % 60}m`;
+    if (pace > 0) {
+      const days = Math.max(1, Math.ceil(remaining / pace));
+      return `≈ ${hours} left · ~${days}d at your pace`;
+    }
+    return `≈ ${hours} left`;
+  })();
 
   return (
     <View style={s.root}>

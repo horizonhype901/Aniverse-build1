@@ -6,7 +6,8 @@ import { store } from '../lib/store';
 import { AnimeItem, Post, Profile, WatchEntry } from '../types';
 import { FALLBACK_ANIME } from '../data/seed';
 import { avatarFor as avatarCfgFor } from '../avatar/options';
-import { anthemFor, bannerFor, bioFor, showcaseFor } from './options';
+import { anthemFor, bannerFor, bioFor, showcaseFor, THEMES } from './options';
+import { badgesFor, BadgesRow } from './badges';
 import { Avatar } from '../components/PostCard';
 import PostCard from '../components/PostCard';
 import { BannerView } from './Banner';
@@ -37,6 +38,7 @@ export default function UserProfileScreen() {
         color: '#8B5CF6',
         avatar: avatarCfgFor(author),
         banner: bannerFor(author),
+        theme: bannerFor(author) % THEMES.length,
         anthem: anthemFor(author),
         showcase: showcaseFor(author),
       }
@@ -71,6 +73,8 @@ export default function UserProfileScreen() {
   }
 
   const isMe = prof.username === me;
+  const theme = THEMES[prof.theme ?? 0] ?? THEMES[0];
+  const theirBadges = previewProfile ? [] : badgesFor(prof.username);
   const showcase = (prof.showcase ?? [])
     .map((id) => findAnime(id, watch))
     .filter(Boolean) as AnimeItem[];
@@ -83,10 +87,10 @@ export default function UserProfileScreen() {
         <View style={{ width: 60 }} />
       </View>
       <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
-        <View style={s.card}>
+        <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.chip }]}>
           <BannerView banner={prof.banner ?? 0} bannerPhoto={prof.bannerPhoto} height={100} />
           <View style={s.topRow}>
-            <View style={s.avatarOverlap}>
+            <View style={[s.avatarOverlap, { borderColor: theme.card }]}>
               <Avatar name={prof.username} color={prof.color} size={72} avatar={prof.avatar} photoUri={prof.photoUri} />
             </View>
             <View style={{ flex: 1 }}>
@@ -107,6 +111,7 @@ export default function UserProfileScreen() {
                 <AnthemCard anthem={prof.anthem} />
               </View>
             )}
+            <BadgesRow badges={theirBadges} />
           </View>
 
           {showcase.length > 0 && (

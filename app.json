@@ -36,7 +36,7 @@
     "scheme": "aniverse",
     "slug": "aniverse",
     "userInterfaceStyle": "dark",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "extra": {
       "eas": {
         "projectId": "173ecc87-4aa0-4c77-89be-b2f608a62fb1"

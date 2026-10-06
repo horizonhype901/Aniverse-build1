@@ -5,15 +5,23 @@ import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { C, R } from '../theme';
 import { Anthem } from '../types';
 import { spotifySearchUrl } from '../lib/music';
+import { useAudio } from '../lib/audio';
 
 export default function AnthemCard({ anthem }: { anthem: Anthem }) {
   const player = useAudioPlayer(anthem.previewUrl ?? null);
   const status = useAudioPlayerStatus(player);
+  const { now, playing } = useAudio();
 
   useEffect(() => {
     if (anthem.previewUrl) player.replace({ uri: anthem.previewUrl });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [anthem.previewUrl]);
+
+  // Pause the anthem when a podcast starts playing
+  useEffect(() => {
+    if (now && playing) player.pause();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [now, playing]);
 
   useEffect(() => () => { player.pause(); }, [player]);
 

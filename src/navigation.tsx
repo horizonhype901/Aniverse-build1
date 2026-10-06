@@ -19,6 +19,8 @@ import AvatarStudioScreen from './avatar/AvatarStudioScreen';
 import ProfileStudioScreen from './profile/ProfileStudioScreen';
 import UserProfileScreen from './profile/UserProfileScreen';
 
+export const navRef = React.createRef<any>();
+
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -82,7 +84,18 @@ export default function RootNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      ref={navRef}
+      onReady={() => {
+        // fresh installs that picked "Design my avatar" land in the studio
+        store.wantsStudio().then((v) => {
+          if (v === 'yes') {
+            store.setWantsStudio('');
+            setTimeout(() => navRef.current?.navigate('AvatarStudio'), 600);
+          }
+        });
+      }}
+    >
       <Stack.Navigator
         screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg } }}
       >

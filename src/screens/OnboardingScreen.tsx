@@ -47,9 +47,10 @@ export default function OnboardingScreen({ onDone }: { onDone: () => void }) {
     setPicked((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]));
   };
 
-  const finish = async () => {
+  const finish = async (withAvatar: boolean) => {
     await store.saveFavTopics(picked);
     await store.setOnboarded();
+    if (withAvatar) await store.setWantsStudio('yes');
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     onDone();
   };
@@ -86,9 +87,26 @@ export default function OnboardingScreen({ onDone }: { onDone: () => void }) {
     );
   }
 
+  if (step === 2) {
+    return (
+      <View style={s.root}>
+        <Text style={s.kicker}>STEP 3 OF 3</Text>
+        <Text style={s.bigEmoji}>🎨</Text>
+        <Text style={s.title}>Design your avatar</Text>
+        <Text style={s.sub}>Build an anime alter-ego — or use a photo. You can change it anytime.</Text>
+        <Pressable style={s.finish} onPress={() => finish(true)}>
+          <Text style={s.finishText}>🎨 Design my avatar</Text>
+        </Pressable>
+        <Pressable style={[s.finish, s.ghost]} onPress={() => finish(false)}>
+          <Text style={[s.finishText, { color: C.muted }]}>Skip for now</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   return (
     <View style={s.root}>
-      <Text style={s.kicker}>STEP 2 OF 2</Text>
+      <Text style={s.kicker}>STEP 2 OF 3</Text>
       <Text style={s.title}>What do you want to talk about?</Text>
       <Text style={s.sub}>Pick a few — your feed will favor them.</Text>
       <ScrollView contentContainerStyle={s.topicWrap}>
@@ -106,9 +124,9 @@ export default function OnboardingScreen({ onDone }: { onDone: () => void }) {
           );
         })}
       </ScrollView>
-      <Pressable style={[s.finish, picked.length === 0 && s.finishDim]} onPress={finish}>
+      <Pressable style={[s.finish, picked.length === 0 && s.finishDim]} onPress={() => setStep(2)}>
         <Text style={s.finishText}>
-          {picked.length === 0 ? 'Skip for now' : `Let's go 🎌 (${picked.length} topics)`}
+          {picked.length === 0 ? 'Skip for now' : `Continue 🎌 (${picked.length} topics)`}
         </Text>
       </Pressable>
     </View>
@@ -138,4 +156,6 @@ const s = StyleSheet.create({
   finish: { backgroundColor: C.primary, borderRadius: R.lg, padding: 16, width: '100%', alignItems: 'center', marginTop: 16 },
   finishDim: { opacity: 0.7 },
   finishText: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  ghost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: C.border },
+  bigEmoji: { fontSize: 72, marginVertical: 12 },
 });

@@ -113,6 +113,16 @@ export default function FeedScreen() {
     return s;
   }, [progress]);
 
+  // "You're on episode X of Y" explainer for shielded posts
+  const shieldHintFor = (animeTag?: string): string | undefined => {
+    if (!animeTag) return undefined;
+    const e = Object.values(progress).find(
+      (p) => p.hideSpoilers && p.title.toLowerCase() === animeTag.toLowerCase()
+    );
+    if (!e) return undefined;
+    return `${e.watched}${e.total ? ` of ${e.total}` : ''}`;
+  };
+
   const mutedWords = useMemo(() => mutes.words.map((w) => w.toLowerCase()), [mutes]);
   const mutedAnime = useMemo(() => new Set(mutes.anime.map((a) => a.toLowerCase())), [mutes]);
 
@@ -188,6 +198,7 @@ export default function FeedScreen() {
               onReact={(e) => toggleReaction(item, e)}
               onOpen={() => nav.navigate('PostDetail', { postId: item.id })}
               onAvatarPress={() => nav.navigate('UserProfile', { author: item.author })}
+              shieldHint={shieldHintFor(item.animeTag)}
               onVote={(i) => item.poll && castVote(item.poll, i)}
               onMarkPrediction={(m) => item.poll && markPrediction(item.poll, m)}
             />

@@ -21,6 +21,8 @@ export const K = {
   onboarded: 'aniverse:onboarded:v1',
   progress: 'aniverse:progress:v1',     // Record<animeId, ProgressEntry>
   favTopics: 'aniverse:favTopics:v1',   // Topic[]
+  studioTab: 'aniverse:studioTab:v1',   // string (avatar studio last category)
+  openStudio: 'aniverse:openStudio:v1', // 'yes' → open AvatarStudio after onboarding
 };
 
 async function get<T>(key: string, fb: T): Promise<T> {
@@ -88,12 +90,18 @@ export const store = {
   saveWatchlist: (w: WatchEntry[]) => set(K.watch, w),
   // profile
   profile: async () => {
-    const p = await get<Profile>(K.profile, { username: 'NewOtaku', bio: '', color: '#FF4D6D', banner: 0 });
+    const p = await get<Profile>(K.profile, { username: 'NewOtaku', bio: '', color: '#FF4D6D', banner: 0, theme: 0 });
     // migrate older profiles
     if (p.banner === undefined) p.banner = 0;
+    if (p.theme === undefined) p.theme = 0;
     if (!Array.isArray(p.showcase)) p.showcase = [];
+    if (!Array.isArray(p.anthemHistory)) p.anthemHistory = [];
     return p;
   },
+  studioTab: () => get<string>(K.studioTab, 'skin'),
+  saveStudioTab: (t: string) => set(K.studioTab, t),
+  wantsStudio: () => get<string>(K.openStudio, ''),
+  setWantsStudio: (v: string) => set(K.openStudio, v),
   saveProfile: (p: Profile) => set(K.profile, p),
   // podcast subscriptions
   subs: () => get<import('../types').PodcastShow[]>(K.subs, []),

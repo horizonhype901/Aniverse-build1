@@ -1,7 +1,6 @@
 import { FALLBACK_ANIME } from '../data/seed';
 
-export const BANNERS: [string, string][] = [
-  ['#FF4D6D', '#8B5CF6'],
+export const BANNERS: [string, string][] = [  ['#FF4D6D', '#8B5CF6'],
   ['#0D0A1A', '#4A3B8C'],
   ['#22D3EE', '#1B3B8C'],
   ['#FFC94D', '#FF6A3D'],
@@ -11,6 +10,15 @@ export const BANNERS: [string, string][] = [
   ['#FF9A8B', '#B565D8'],
 ];
 export const BANNER_NAMES = ['Sunset Pop', 'Midnight', 'Abyss', 'Ember', 'Forest', 'Neon Bloom', 'Mono', 'Dream'];
+
+export interface ProfileTheme { name: string; card: string; accent: string; chip: string; }
+export const THEMES: ProfileTheme[] = [
+  { name: 'Midnight', card: '#1B1533', accent: '#FF4D6D', chip: '#2C2350' },
+  { name: 'Sakura', card: '#2E1A28', accent: '#F472B6', chip: '#3D1A2E' },
+  { name: 'Ocean', card: '#10293F', accent: '#22D3EE', chip: '#0A1B2B' },
+  { name: 'Matcha', card: '#1A2B14', accent: '#4ADE80', chip: '#101B0A' },
+  { name: 'Ember', card: '#2B1A10', accent: '#FF9A3D', chip: '#3D2415' },
+];
 
 function hashStr(s: string): number {
   let h = 0;

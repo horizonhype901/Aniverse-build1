@@ -75,7 +75,7 @@ export interface ListeningStats { episodesCompleted: number; secondsListened: nu
 
 export interface Mutes { words: string[]; anime: string[]; }
 
-export interface Profile { username: string; bio: string; color: string; avatar?: AvatarConfig | null; photoUri?: string | null; banner: number; bannerPhoto?: string | null; anthem?: Anthem | null; showcase?: number[]; pinnedPostId?: string | null; }
+export interface Profile { username: string; bio: string; color: string; avatar?: AvatarConfig | null; photoUri?: string | null; banner: number; bannerPhoto?: string | null; anthem?: Anthem | null; anthemHistory?: Anthem[]; showcase?: number[]; pinnedPostId?: string | null; theme: number; }
 
 export interface Anthem {
   track: string;

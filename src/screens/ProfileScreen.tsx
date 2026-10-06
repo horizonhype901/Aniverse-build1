@@ -11,6 +11,9 @@ import { fmtClock } from '../lib/format';
 import { BannerView } from '../profile/Banner';
 import AnthemCard from '../profile/AnthemCard';
 import { FALLBACK_ANIME } from '../data/seed';
+import { THEMES } from '../profile/options';
+import Heatmap from '../components/Heatmap';
+import { BadgesRow, computeBadges } from '../profile/badges';
 
 const FILTERS: { key: WatchStatus | 'all'; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -38,7 +41,7 @@ function streakDays(days: string[]): number {
 
 export default function ProfileScreen() {
   const nav = useNavigation<any>();
-  const [profile, setProfile] = useState<Profile>({ username: '', bio: '', color: COLORS[0], banner: 0 });
+  const [profile, setProfile] = useState<Profile>({ username: '', bio: '', color: COLORS[0], banner: 0, theme: 0 });
   const [editing, setEditing] = useState(false);
   const [watch, setWatch] = useState<WatchEntry[]>([]);
   const [subs, setSubs] = useState<PodcastShow[]>([]);
@@ -51,12 +54,21 @@ export default function ProfileScreen() {
   const [muteWord, setMuteWord] = useState('');
   const [muteAnime, setMuteAnime] = useState('');
   const [filter, setFilter] = useState<WatchStatus | 'all'>('all');
+  const [myComments, setMyComments] = useState(0);
+  const [toast, setToast] = useState<{ msg: string; onUndo?: () => void } | null>(null);
+  const toastTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = (msg: string, onUndo?: () => void) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ msg, onUndo });
+    toastTimer.current = setTimeout(() => setToast(null), 4500);
+  };
 
   const load = useCallback(async () => {
-    const [p, w, s, posts, pg, ci, pr, li, mu] = await Promise.all([
+    const [p, w, s, posts, pg, ci, pr, li, mu, cm] = await Promise.all([
       store.profile(), store.watchlist(), store.subs(), store.posts(),
       store.progress(), store.checkins(), store.predictions(),
-      store.listening(), store.mutes(),
+      store.listening(), store.mutes(), store.comments(),
     ]);
     setProfile(p);
     setWatch(w);
@@ -67,6 +79,7 @@ export default function ProfileScreen() {
     setPredictions(pr);
     setListening(li);
     setMutes(mu);
+    setMyComments((Object.values(cm).flat() as any[]).filter((c) => c.author === p.username).length);
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -80,9 +93,17 @@ export default function ProfileScreen() {
   };
 
   const removeWatch = async (id: number) => {
+    const entry = watch.find((x) => x.anime.id === id);
     const next = watch.filter((x) => x.anime.id !== id);
     setWatch(next);
     await store.saveWatchlist(next);
+    if (entry) {
+      showToast(`Removed "${entry.anime.title}"`, async () => {
+        const restored = [...(await store.watchlist()), entry];
+        setWatch(restored);
+        await store.saveWatchlist(restored);
+      });
+    }
   };
 
   const addMuteWord = async () => {
@@ -125,14 +146,29 @@ export default function ProfileScreen() {
   for (const x of watch) for (const g of x.anime.genres || []) genreCount[g] = (genreCount[g] || 0) + 1;
   const topGenres = Object.entries(genreCount).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([g]) => g);
 
+  const theme = THEMES[profile.theme ?? 0] ?? THEMES[0];
+  const myBadges = computeBadges({
+    eps: epsWatched,
+    streak,
+    predRight,
+    predTotal: predEntries.length,
+    podEps: listening.episodesCompleted,
+    comments: myComments,
+    posts: myPosts.length,
+    checkinDays: checkins.length,
+    showcaseCount: showcaseAnime.length,
+    hasAnthem: !!profile.anthem,
+  });
+  const nowWatching = watch.filter((x) => x.status === 'watching').slice(0, 8);
+
   return (
     <View style={s.root}>
       <View style={s.header}><Text style={s.title}>Profile</Text></View>
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-        <View style={[s.card, { padding: 0, overflow: 'hidden' }]}>
+        <View style={[s.card, { padding: 0, overflow: 'hidden', backgroundColor: theme.card, borderColor: theme.chip }]}>
           <BannerView banner={profile.banner ?? 0} bannerPhoto={profile.bannerPhoto} height={100} />
           <View style={[s.topRow, { marginTop: -28, paddingHorizontal: 14 }]}>
-            <View style={s.avatarRing}>
+            <View style={[s.avatarRing, { borderColor: theme.card }]}>
               <Avatar name={profile.username || '?'} color={profile.color} size={64} avatar={profile.avatar} photoUri={profile.photoUri} />
             </View>
             <View style={{ flex: 1, marginLeft: 12, paddingTop: 28 }}>
@@ -181,14 +217,42 @@ export default function ProfileScreen() {
                 </ScrollView>
               </>
             )}
+            <BadgesRow badges={myBadges} />
+            {nowWatching.length > 0 && (
+              <>
+                <Text style={s.showTitle}>▶️ Currently watching</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {nowWatching.map((w) => {
+                    const pg = progress[w.anime.id];
+                    const pct = pg?.total ? Math.min(100, Math.round((pg.watched / pg.total) * 100)) : 0;
+                    return (
+                      <Pressable key={w.anime.id} style={s.showTile}
+                        onPress={() => nav.navigate('AnimeDetail', { anime: w.anime })}>
+                        {w.anime.image ? (
+                          <Image source={{ uri: w.anime.image }} style={s.showImg} />
+                        ) : (
+                          <View style={[s.showImg, s.showFallback]}>
+                            <Text style={s.showFallbackText}>{w.anime.title.charAt(0)}</Text>
+                          </View>
+                        )}
+                        <View style={s.miniBar}><View style={[s.miniFill, { width: `${pct}%`, backgroundColor: theme.accent }]} /></View>
+                        <Text style={s.showName} numberOfLines={2}>{w.anime.title}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              </>
+            )}
+            <Text style={s.showTitle}>🗓️ Activity</Text>
+            <Heatmap days={checkins} accent={theme.accent} />
             <View style={s.profileBtns}>
               <Pressable style={s.editBtn} onPress={() => (editing ? save() : setEditing(true))}>
                 <Text style={s.editBtnText}>{editing ? '✓ Save' : '✏️ Edit'}</Text>
               </Pressable>
-              <Pressable style={s.avatarBtn} onPress={() => nav.navigate('AvatarStudio')}>
+              <Pressable style={[s.avatarBtn, { backgroundColor: theme.accent }]} onPress={() => nav.navigate('AvatarStudio')}>
                 <Text style={s.avatarBtnText}>🎨 Avatar</Text>
               </Pressable>
-              <Pressable style={s.studioBtn} onPress={() => nav.navigate('ProfileStudio')}>
+              <Pressable style={[s.studioBtn, { backgroundColor: theme.accent }]} onPress={() => nav.navigate('ProfileStudio')}>
                 <Text style={s.studioBtnText}>🛠️ Customize</Text>
               </Pressable>
             </View>
@@ -323,6 +387,16 @@ export default function ProfileScreen() {
           </>
         )}
       </ScrollView>
+      {toast && (
+        <View style={s.toast}>
+          <Text style={s.toastMsg} numberOfLines={2}>{toast.msg}</Text>
+          {!!toast.onUndo && (
+            <Pressable onPress={() => { toast.onUndo?.(); setToast(null); }}>
+              <Text style={s.toastUndo}>Undo</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -355,6 +429,11 @@ const s = StyleSheet.create({
   showName: { color: C.text, fontSize: 11, fontWeight: '600', marginTop: 4 },
   pinLabel: { color: C.gold, fontWeight: '800', fontSize: 13, marginHorizontal: 16, marginTop: 4 },
   pinRow: { borderColor: C.gold, borderWidth: 1 },
+  miniBar: { height: 4, borderRadius: 2, backgroundColor: C.surface, marginTop: 6, overflow: 'hidden' },
+  miniFill: { height: 4, borderRadius: 2 },
+  toast: { position: 'absolute', bottom: 90, left: 16, right: 16, backgroundColor: '#23232B', borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.border },
+  toastMsg: { color: '#fff', flex: 1, fontSize: 13, fontWeight: '600' },
+  toastUndo: { color: C.primary, fontWeight: '900', fontSize: 14, marginLeft: 12 },
   stats: { flexDirection: 'row', marginHorizontal: 12, marginBottom: 6 },
   stat: { flex: 1, backgroundColor: C.card, borderRadius: R.md, padding: 12, alignItems: 'center', marginHorizontal: 4, borderWidth: 1, borderColor: C.border },
   statN: { color: C.text, fontSize: 20, fontWeight: '900' },

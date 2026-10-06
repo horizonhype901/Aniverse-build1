@@ -12,9 +12,8 @@ import AvatarRenderer from './AvatarRenderer';
 import {
   SKINS, SKIN_NAMES, FACES, EYES, EYE_COLORS, EYE_COLOR_NAMES, BROWS,
   MOUTHS, HAIRS, HAIR_COLORS, HAIR_COLOR_NAMES, ACCESSORIES, BG_NAMES,
-  DEFAULT_AVATAR, randomAvatar,
+  DEFAULT_AVATAR, MOODS, randomAvatar, randomizeCategory,
 } from './options';
-
 type CatKey = keyof AvatarConfig;
 
 interface Cat {
@@ -50,9 +49,17 @@ export default function AvatarStudioScreen() {
       const p = await store.profile();
       if (p.avatar) setConfig(p.avatar);
       if (p.photoUri) setPhotoUri(p.photoUri);
+      const tab = await store.studioTab();
+      const found = CATS.find((c) => c.key === tab);
+      if (found) setCat(found);
       setLoaded(true);
     })();
   }, []);
+
+  const selectCat = (c: Cat) => {
+    setCat(c);
+    store.saveStudioTab(c.key);
+  };
 
   const pick = (i: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -63,6 +70,16 @@ export default function AvatarStudioScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setConfig(randomAvatar());
     setPhotoUri(null);
+  };
+
+  const diceCategory = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setConfig((c) => randomizeCategory(c, cat.key));
+  };
+
+  const applyMood = (m: { eyes: number; mouth: number }) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setConfig((c) => ({ ...c, eyes: m.eyes, mouth: m.mouth }));
   };
 
   const usePhoto = async () => {
@@ -100,7 +117,7 @@ export default function AvatarStudioScreen() {
           {photoUri ? (
             <Image source={{ uri: photoUri }} style={{ width: 168, height: 168 }} />
           ) : (
-            <AvatarRenderer config={config} size={168} />
+            <AvatarRenderer config={config} size={168} animated />
           )}
         </View>
         <View style={s.previewBtns}>
@@ -119,14 +136,28 @@ export default function AvatarStudioScreen() {
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 12 }} style={s.catBar}>
-        {CATS.map((c) => (
-          <Pressable key={c.key} onPress={() => setCat(c)}
-            style={[s.catChip, cat.key === c.key && s.catActive]}>
-            <Text style={[s.catText, cat.key === c.key && { color: '#fff' }]}>{c.label}</Text>
+        contentContainerStyle={{ paddingHorizontal: 12, alignItems: 'center' }} style={s.moodBar}>
+        {MOODS.map((m) => (
+          <Pressable key={m.name} onPress={() => applyMood(m)} style={s.moodChip}>
+            <Text style={s.moodText}>{m.name}</Text>
           </Pressable>
         ))}
       </ScrollView>
+
+      <View style={s.catRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingLeft: 12 }} style={{ flex: 1, maxHeight: 48 }}>
+          {CATS.map((c) => (
+            <Pressable key={c.key} onPress={() => selectCat(c)}
+              style={[s.catChip, cat.key === c.key && s.catActive]}>
+              <Text style={[s.catText, cat.key === c.key && { color: '#fff' }]}>{c.label}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+        <Pressable style={s.diceBtn} onPress={diceCategory}>
+          <Text style={s.diceText}>🎲</Text>
+        </Pressable>
+      </View>
 
       <ScrollView contentContainerStyle={s.grid}>
         {cat.type === 'color'
@@ -166,6 +197,12 @@ const s = StyleSheet.create({
   toolBtn: { backgroundColor: C.card, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 8, marginHorizontal: 4, borderWidth: 1, borderColor: C.border },
   toolText: { color: C.text, fontWeight: '700', fontSize: 13 },
   catBar: { maxHeight: 48 },
+  moodBar: { maxHeight: 44 },
+  moodChip: { borderWidth: 1, borderColor: C.border, backgroundColor: C.card2, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 7, marginRight: 8, alignSelf: 'center' },
+  moodText: { color: C.text, fontWeight: '700', fontSize: 12 },
+  catRow: { flexDirection: 'row', alignItems: 'center' },
+  diceBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.card, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  diceText: { fontSize: 20 },
   catChip: { borderWidth: 1, borderColor: C.border, backgroundColor: C.card, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8, alignSelf: 'center' },
   catActive: { backgroundColor: C.secondary, borderColor: C.secondary },
   catText: { color: C.muted, fontWeight: '700', fontSize: 13 },
