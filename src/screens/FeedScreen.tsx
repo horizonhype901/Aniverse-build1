@@ -1,41 +1,51 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import { C, R, TOPIC_COLORS } from '../theme';
+import { C, TOPIC_COLORS } from '../theme';
 import { TOPICS } from '../data/seed';
 import { ensureSeeded, store } from '../lib/store';
-import { Poll, Post, Topic } from '../types';
+import { Mutes, Poll, Post, ProgressEntry, Topic } from '../types';
 import PostCard from '../components/PostCard';
 
 function hotScore(p: Post): number {
   const hours = (Date.now() - p.createdAt) / 3600000;
-  return p.likes / Math.pow(hours + 2, 1.3);
+  const reactions = 0;
+  return (p.likes + reactions) / Math.pow(hours + 2, 1.3);
 }
 
 export default function FeedScreen() {
   const nav = useNavigation<any>();
   const [posts, setPosts] = useState<Post[]>([]);
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
-  const [likes, setLikes] = useState<string[]>([]);
+  const [reactions, setReactions] = useState<Record<string, Record<string, number>>>({});
+  const [myReactions, setMyReactions] = useState<Record<string, string>>({});
   const [votes, setVotes] = useState<Record<string, number>>({});
+  const [predictions, setPredictions] = useState<Record<string, 'right' | 'wrong'>>({});
+  const [mutes, setMutes] = useState<Mutes>({ words: [], anime: [] });
+  const [progress, setProgress] = useState<Record<number, ProgressEntry>>({});
   const [topic, setTopic] = useState<'All' | Topic>('All');
   const [sort, setSort] = useState<'hot' | 'new'>('hot');
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     await ensureSeeded();
-    const [p, c, l, v] = await Promise.all([
-      store.posts(), store.comments(), store.likes(), store.votes(),
+    const [p, c, r, mr, v, pr, m, pg] = await Promise.all([
+      store.posts(), store.comments(), store.reactions(), store.myReactions(),
+      store.votes(), store.predictions(), store.mutes(), store.progress(),
     ]);
     setPosts(p);
     const counts: Record<string, number> = {};
     for (const id of Object.keys(c)) counts[id] = c[id].length;
     setCommentCounts(counts);
-    setLikes(l);
+    setReactions(r);
+    setMyReactions(mr);
     setVotes(v);
+    setPredictions(pr);
+    setMutes(m);
+    setProgress(pg);
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -46,16 +56,23 @@ export default function FeedScreen() {
     setRefreshing(false);
   };
 
-  const toggleLike = async (post: Post) => {
-    const has = likes.includes(post.id);
-    const next = has ? likes.filter((x) => x !== post.id) : [...likes, post.id];
-    setLikes(next);
-    await store.saveLikes(next);
-    const updated = posts.map((x) =>
-      x.id === post.id ? { ...x, likes: x.likes + (has ? -1 : 1) } : x
-    );
-    setPosts(updated);
-    await store.savePosts(updated);
+  const toggleReaction = async (post: Post, emoji: string) => {
+    const mine = myReactions[post.id];
+    const counts = { ...(reactions[post.id] || {}) };
+    const nextMine = { ...myReactions };
+    if (mine === emoji) {
+      counts[emoji] = Math.max(0, (counts[emoji] || 1) - 1);
+      delete nextMine[post.id];
+    } else {
+      if (mine) counts[mine] = Math.max(0, (counts[mine] || 1) - 1);
+      counts[emoji] = (counts[emoji] || 0) + 1;
+      nextMine[post.id] = emoji;
+    }
+    const nextReactions = { ...reactions, [post.id]: counts };
+    setReactions(nextReactions);
+    setMyReactions(nextMine);
+    await store.saveReactions(nextReactions);
+    await store.saveMyReactions(nextMine);
   };
 
   const castVote = async (poll: Poll, idx: number) => {
@@ -76,10 +93,44 @@ export default function FeedScreen() {
     await store.savePosts(updated);
   };
 
-  const filtered = posts.filter((x) => topic === 'All' || x.topic === topic);
-  const sorted = [...filtered].sort((a, b) =>
+  const markPrediction = async (poll: Poll, mark: 'right' | 'wrong') => {
+    const np = { ...predictions, [poll.id]: mark };
+    setPredictions(np);
+    await store.savePredictions(np);
+    Haptics.notificationAsync(
+      mark === 'right'
+        ? Haptics.NotificationFeedbackType.Success
+        : Haptics.NotificationFeedbackType.Warning
+    );
+  };
+
+  // Titles with spoiler protection enabled (matched by anime title)
+  const shieldedTitles = useMemo(() => {
+    const s = new Set<string>();
+    for (const e of Object.values(progress)) {
+      if (e.hideSpoilers) s.add(e.title.toLowerCase());
+    }
+    return s;
+  }, [progress]);
+
+  const mutedWords = useMemo(() => mutes.words.map((w) => w.toLowerCase()), [mutes]);
+  const mutedAnime = useMemo(() => new Set(mutes.anime.map((a) => a.toLowerCase())), [mutes]);
+
+  const visible = posts.filter((x) => {
+    if (topic !== 'All' && x.topic !== topic) return false;
+    if (x.animeTag && mutedAnime.has(x.animeTag.toLowerCase())) return false;
+    if (mutedWords.length > 0) {
+      const hay = `${x.title} ${x.body}`.toLowerCase();
+      if (mutedWords.some((w) => w && hay.includes(w))) return false;
+    }
+    return true;
+  });
+
+  const sorted = [...visible].sort((a, b) =>
     sort === 'hot' ? hotScore(b) - hotScore(a) : b.createdAt - a.createdAt
   );
+
+  const mutedCount = posts.length - visible.length - (posts.length - posts.filter((x) => topic === 'All' || x.topic === topic).length);
 
   return (
     <View style={s.root}>
@@ -109,23 +160,38 @@ export default function FeedScreen() {
         })}
       </ScrollView>
 
+      {mutedCount > 0 && (
+        <Text style={s.mutedNote}>
+          🙈 {mutedCount} {mutedCount === 1 ? 'post' : 'posts'} hidden by your mute filters
+        </Text>
+      )}
+
       <FlatList
         data={sorted}
         keyExtractor={(x) => x.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} />}
         contentContainerStyle={{ paddingBottom: 100 }}
-        renderItem={({ item }) => (
-          <PostCard
-            post={item}
-            liked={likes.includes(item.id)}
-            likeCount={item.likes}
-            commentCount={commentCounts[item.id] || 0}
-            voted={votes[item.poll?.id || ''] ?? null}
-            onLike={() => toggleLike(item)}
-            onOpen={() => nav.navigate('PostDetail', { postId: item.id })}
-            onVote={(i) => item.poll && castVote(item.poll, i)}
-          />
-        )}
+        renderItem={({ item }) => {
+          const strict =
+            item.spoiler &&
+            !!item.animeTag &&
+            shieldedTitles.has(item.animeTag.toLowerCase());
+          return (
+            <PostCard
+              post={item}
+              reactions={reactions[item.id] || {}}
+              myReaction={myReactions[item.id] || null}
+              commentCount={commentCounts[item.id] || 0}
+              voted={votes[item.poll?.id || ''] ?? null}
+              predictionMark={item.poll ? predictions[item.poll.id] ?? null : null}
+              strictSpoiler={strict}
+              onReact={(e) => toggleReaction(item, e)}
+              onOpen={() => nav.navigate('PostDetail', { postId: item.id })}
+              onVote={(i) => item.poll && castVote(item.poll, i)}
+              onMarkPrediction={(m) => item.poll && markPrediction(item.poll, m)}
+            />
+          );
+        }}
         ListEmptyComponent={
           <Text style={s.empty}>No posts here yet — start the conversation! 🎌</Text>
         }
@@ -153,6 +219,7 @@ const s = StyleSheet.create({
   chips: { maxHeight: 46, marginBottom: 4 },
   chip: { borderWidth: 1, borderColor: C.border, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8, backgroundColor: C.card, alignSelf: 'center' },
   chipText: { color: C.muted, fontWeight: '700', fontSize: 13 },
+  mutedNote: { color: C.faint, fontSize: 12, textAlign: 'center', marginBottom: 4 },
   empty: { color: C.faint, textAlign: 'center', marginTop: 60, fontSize: 15 },
   fab: { position: 'absolute', right: 18, bottom: 26, width: 60, height: 60, borderRadius: 30, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', elevation: 6, shadowColor: C.primary, shadowOpacity: 0.5, shadowRadius: 10 },
   fabText: { color: '#fff', fontSize: 30, fontWeight: '300', marginTop: -2 },

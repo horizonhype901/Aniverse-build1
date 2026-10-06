@@ -161,3 +161,61 @@ export const FALLBACK_ANIME: AnimeItem[] = [
   { id: 32281, title: 'Your Name', image: '', score: 8.84, synopsis: 'Two teens who have never met start swapping bodies across time — and race to find each other.', genres: ['Drama', 'Romance', 'Supernatural'], episodes: 1, status: 'Finished Airing', year: 2016 },
   { id: 28851, title: 'A Silent Voice', image: '', score: 8.94, synopsis: 'A former bully seeks redemption with the deaf girl he tormented in elementary school.', genres: ['Drama', 'Romance'], episodes: 1, status: 'Finished Airing', year: 2016 },
 ];
+
+// ---------------------------------------------------------------------------
+// v2: vibe tags for the fallback catalog (ids are MAL ids from FALLBACK_ANIME)
+// ---------------------------------------------------------------------------
+export const VIBES = ['Epic', 'Emotional', 'Dark', 'Funny', 'Cozy', 'Mind-bending', 'Romantic', 'Wholesome'] as const;
+export type Vibe = (typeof VIBES)[number];
+
+export const ANIME_VIBES: Record<number, Vibe[]> = {
+  52991: ['Emotional', 'Cozy', 'Epic'],
+  52299: ['Epic', 'Dark'],
+  5114: ['Epic', 'Emotional', 'Dark'],
+  40748: ['Epic', 'Dark'],
+  38000: ['Epic', 'Emotional'],
+  16498: ['Epic', 'Dark', 'Mind-bending'],
+  21: ['Epic', 'Funny', 'Emotional'],
+  20: ['Epic', 'Funny'],
+  1535: ['Dark', 'Mind-bending'],
+  1: ['Cozy', 'Epic'],
+  44510: ['Dark', 'Funny', 'Epic'],
+  50265: ['Funny', 'Wholesome', 'Cozy'],
+  52034: ['Dark', 'Emotional'],
+  37521: ['Epic', 'Emotional', 'Dark'],
+  11061: ['Epic', 'Emotional'],
+  31964: ['Epic', 'Wholesome'],
+  32182: ['Funny', 'Emotional', 'Epic'],
+  31240: ['Dark', 'Emotional', 'Mind-bending'],
+  30276: ['Funny', 'Epic'],
+  269: ['Epic'],
+  813: ['Epic', 'Funny'],
+  30: ['Dark', 'Mind-bending'],
+  32281: ['Romantic', 'Emotional'],
+  28851: ['Emotional', 'Romantic'],
+};
+
+// ---------------------------------------------------------------------------
+// v2: reaction emojis + seed reaction counts so the feed feels alive
+// ---------------------------------------------------------------------------
+export const REACTION_EMOJIS = ['🔥', '❤️', '😭', '🤯', '💀', '✨'];
+
+export const SEED_REACTIONS: Record<string, Record<string, number>> = {
+  'seed-1': { '😭': 96, '❤️': 74, '✨': 21 },
+  'seed-2': { '🔥': 88, '🤯': 34, '💀': 19 },
+  'seed-3': { '❤️': 61, '✨': 28 },
+  'seed-4': { '🤯': 102, '🔥': 77 },
+  'seed-5': { '🤯': 91, '🔥': 45 },
+  'seed-6': { '❤️': 42, '✨': 31 },
+  'seed-7': { '❤️': 35, '✨': 12 },
+  'seed-8': { '🔥': 70, '❤️': 58, '💀': 15 },
+  'seed-9': { '🔥': 120, '🤯': 66 },
+  'seed-10': { '💀': 54, '🔥': 40 },
+  'seed-11': { '😭': 63, '❤️': 49 },
+  'seed-12': { '💀': 88, '😭': 52 },
+  'seed-13': { '🔥': 83, '🤯': 37 },
+  'seed-14': { '✨': 55, '❤️': 44 },
+};
+
+// Taste-quiz picks (top 10 by score from the fallback catalog)
+export const QUIZ_ANIME_IDS = [5114, 11061, 28851, 52991, 1, 37521, 21, 16498, 32182, 32281];

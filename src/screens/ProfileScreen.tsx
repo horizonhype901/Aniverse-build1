@@ -5,16 +5,33 @@ import {
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { C, R } from '../theme';
 import { store } from '../lib/store';
-import { PodcastShow, Post, Profile, WatchEntry, WatchStatus } from '../types';
+import { ListeningStats, Mutes, PodcastShow, Post, Profile, ProgressEntry, WatchEntry, WatchStatus } from '../types';
 import { Avatar } from '../components/PostCard';
+import { fmtClock } from '../lib/format';
 
 const FILTERS: { key: WatchStatus | 'all'; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'watching', label: 'Watching' },
   { key: 'completed', label: 'Completed' },
   { key: 'plan', label: 'Plan to Watch' },
+  { key: 'onhold', label: 'On Hold' },
+  { key: 'dropped', label: 'Dropped' },
 ];
 const COLORS = ['#FF4D6D', '#8B5CF6', '#22D3EE', '#F472B6', '#FFC94D', '#4ADE80'];
+const STATUS_LABEL: Record<WatchStatus, string> = {
+  watching: '▶️ Watching', completed: '✅ Completed', plan: '📌 Plan to Watch',
+  onhold: '⏸️ On Hold', dropped: '🗑️ Dropped',
+};
+
+const isoDay = (d: Date) => d.toISOString().slice(0, 10);
+function streakDays(days: string[]): number {
+  const set = new Set(days);
+  let s = 0;
+  const d = new Date();
+  if (!set.has(isoDay(d))) d.setDate(d.getDate() - 1);
+  while (set.has(isoDay(d))) { s++; d.setDate(d.getDate() - 1); }
+  return s;
+}
 
 export default function ProfileScreen() {
   const nav = useNavigation<any>();
@@ -23,16 +40,30 @@ export default function ProfileScreen() {
   const [watch, setWatch] = useState<WatchEntry[]>([]);
   const [subs, setSubs] = useState<PodcastShow[]>([]);
   const [myPosts, setMyPosts] = useState<Post[]>([]);
+  const [progress, setProgress] = useState<Record<number, ProgressEntry>>({});
+  const [checkins, setCheckins] = useState<string[]>([]);
+  const [predictions, setPredictions] = useState<Record<string, 'right' | 'wrong'>>({});
+  const [listening, setListening] = useState<ListeningStats>({ episodesCompleted: 0, secondsListened: 0, completedIds: [] });
+  const [mutes, setMutes] = useState<Mutes>({ words: [], anime: [] });
+  const [muteWord, setMuteWord] = useState('');
+  const [muteAnime, setMuteAnime] = useState('');
   const [filter, setFilter] = useState<WatchStatus | 'all'>('all');
 
   const load = useCallback(async () => {
-    const [p, w, s, posts] = await Promise.all([
+    const [p, w, s, posts, pg, ci, pr, li, mu] = await Promise.all([
       store.profile(), store.watchlist(), store.subs(), store.posts(),
+      store.progress(), store.checkins(), store.predictions(),
+      store.listening(), store.mutes(),
     ]);
     setProfile(p);
     setWatch(w);
     setSubs(s);
     setMyPosts(posts.filter((x) => x.author === p.username));
+    setProgress(pg);
+    setCheckins(ci);
+    setPredictions(pr);
+    setListening(li);
+    setMutes(mu);
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -51,7 +82,39 @@ export default function ProfileScreen() {
     await store.saveWatchlist(next);
   };
 
+  const addMuteWord = async () => {
+    const w = muteWord.trim().toLowerCase();
+    if (!w || mutes.words.includes(w)) return;
+    const nm = { ...mutes, words: [...mutes.words, w] };
+    setMutes(nm);
+    await store.saveMutes(nm);
+    setMuteWord('');
+  };
+  const addMuteAnime = async () => {
+    const a = muteAnime.trim();
+    if (!a || mutes.anime.some((x) => x.toLowerCase() === a.toLowerCase())) return;
+    const nm = { ...mutes, anime: [...mutes.anime, a] };
+    setMutes(nm);
+    await store.saveMutes(nm);
+    setMuteAnime('');
+  };
+  const removeMute = async (kind: 'words' | 'anime', val: string) => {
+    const nm = { ...mutes, [kind]: mutes[kind].filter((x) => x !== val) };
+    setMutes(nm);
+    await store.saveMutes(nm);
+  };
+
   const shown = watch.filter((x) => filter === 'all' || x.status === filter);
+
+  // ---- stats ----
+  const epsWatched = Object.values(progress).reduce((a, e) => a + e.watched, 0);
+  const hoursWatched = (epsWatched * 24) / 60;
+  const streak = streakDays(checkins);
+  const predEntries = Object.values(predictions);
+  const predRight = predEntries.filter((x) => x === 'right').length;
+  const genreCount: Record<string, number> = {};
+  for (const x of watch) for (const g of x.anime.genres || []) genreCount[g] = (genreCount[g] || 0) + 1;
+  const topGenres = Object.entries(genreCount).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([g]) => g);
 
   return (
     <View style={s.root}>
@@ -102,6 +165,20 @@ export default function ProfileScreen() {
           ))}
         </View>
 
+        {/* Stats dashboard */}
+        <Text style={s.secTitle}>📊 My Stats</Text>
+        <View style={s.statGrid}>
+          <View style={s.statCard}><Text style={s.statBig}>📺 {epsWatched}</Text><Text style={s.statLbl}>episodes tracked</Text></View>
+          <View style={s.statCard}><Text style={s.statBig}>⏱️ {hoursWatched >= 1 ? `${Math.round(hoursWatched)}h` : `${epsWatched * 24}m`}</Text><Text style={s.statLbl}>watch time</Text></View>
+          <View style={s.statCard}><Text style={s.statBig}>🔥 {streak}</Text><Text style={s.statLbl}>day streak</Text></View>
+          <View style={s.statCard}><Text style={s.statBig}>🔮 {predRight}/{predEntries.length}</Text><Text style={s.statLbl}>predictions right</Text></View>
+          <View style={s.statCard}><Text style={s.statBig}>🎙️ {listening.episodesCompleted}</Text><Text style={s.statLbl}>podcast eps done</Text></View>
+          <View style={s.statCard}><Text style={s.statBig}>🎧 {fmtClock(listening.secondsListened)}</Text><Text style={s.statLbl}>listened</Text></View>
+        </View>
+        {topGenres.length > 0 && (
+          <Text style={s.genreLine}>Your DNA: {topGenres.join(' • ')}</Text>
+        )}
+
         <Text style={s.secTitle}>📺 My Watchlist</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 12 }} style={{ maxHeight: 44 }}>
@@ -120,11 +197,42 @@ export default function ProfileScreen() {
             {!!x.anime.image && <Image source={{ uri: x.anime.image }} style={s.thumb} />}
             <View style={{ flex: 1 }}>
               <Text style={s.rowTitle} numberOfLines={1}>{x.anime.title}</Text>
-              <Text style={s.rowSub}>{x.status === 'watching' ? '▶️ Watching' : x.status === 'completed' ? '✅ Completed' : '📌 Plan to Watch'}</Text>
+              <Text style={s.rowSub}>{STATUS_LABEL[x.status]}{x.note ? ` — ${x.note}` : ''}</Text>
             </View>
             <Pressable onPress={() => removeWatch(x.anime.id)}><Text style={s.remove}>✕</Text></Pressable>
           </Pressable>
         ))}
+
+        <Text style={s.secTitle}>🙈 Muted words & anime</Text>
+        <View style={s.card}>
+          <View style={s.muteRow}>
+            <TextInput style={[s.edit, { flex: 1 }]} value={muteWord} onChangeText={setMuteWord}
+              placeholder="Mute a word (e.g. isekai)" placeholderTextColor={C.faint}
+              onSubmitEditing={addMuteWord} />
+            <Pressable style={s.muteAdd} onPress={addMuteWord}><Text style={s.muteAddText}>＋</Text></Pressable>
+          </View>
+          <View style={s.muteRow}>
+            <TextInput style={[s.edit, { flex: 1 }]} value={muteAnime} onChangeText={setMuteAnime}
+              placeholder="Mute an anime (e.g. One Piece)" placeholderTextColor={C.faint}
+              onSubmitEditing={addMuteAnime} />
+            <Pressable style={s.muteAdd} onPress={addMuteAnime}><Text style={s.muteAddText}>＋</Text></Pressable>
+          </View>
+          <View style={s.muteChips}>
+            {mutes.words.map((w) => (
+              <Pressable key={'w' + w} style={s.mchip} onPress={() => removeMute('words', w)}>
+                <Text style={s.mchipText}>"{w}" ✕</Text>
+              </Pressable>
+            ))}
+            {mutes.anime.map((a) => (
+              <Pressable key={'a' + a} style={[s.mchip, s.mchipAnime]} onPress={() => removeMute('anime', a)}>
+                <Text style={s.mchipText}>🎌 {a} ✕</Text>
+              </Pressable>
+            ))}
+            {mutes.words.length === 0 && mutes.anime.length === 0 && (
+              <Text style={s.empty}>Nothing muted — the feed shows everything.</Text>
+            )}
+          </View>
+        </View>
 
         <Text style={s.secTitle}>🎙️ Subscribed Podcasts</Text>
         {subs.length === 0 ? (
@@ -149,7 +257,7 @@ export default function ProfileScreen() {
             onPress={() => nav.navigate('PostDetail', { postId: x.id })}>
             <View style={{ flex: 1 }}>
               <Text style={s.rowTitle} numberOfLines={2}>{x.title}</Text>
-              <Text style={s.rowSub}>❤️ {x.likes} • {x.topic}</Text>
+              <Text style={s.rowSub}>💬 {x.topic}</Text>
             </View>
             <Text style={s.chev}>›</Text>
           </Pressable>
@@ -177,6 +285,11 @@ const s = StyleSheet.create({
   stat: { flex: 1, backgroundColor: C.card, borderRadius: R.md, padding: 12, alignItems: 'center', marginHorizontal: 4, borderWidth: 1, borderColor: C.border },
   statN: { color: C.text, fontSize: 20, fontWeight: '900' },
   statL: { color: C.faint, fontSize: 11, marginTop: 2 },
+  statGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: 8 },
+  statCard: { width: '31%', backgroundColor: C.card, borderRadius: R.md, padding: 10, margin: '1%', borderWidth: 1, borderColor: C.border },
+  statBig: { color: C.text, fontSize: 15, fontWeight: '900' },
+  statLbl: { color: C.faint, fontSize: 10, marginTop: 2 },
+  genreLine: { color: C.secondary, fontSize: 13, fontWeight: '600', marginHorizontal: 16, marginTop: 6 },
   secTitle: { color: C.text, fontWeight: '800', fontSize: 16, marginHorizontal: 16, marginTop: 14, marginBottom: 6 },
   fchip: { borderWidth: 1, borderColor: C.border, backgroundColor: C.card, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 7, marginRight: 8, alignSelf: 'center' },
   fchipActive: { backgroundColor: C.secondary, borderColor: C.secondary },
@@ -188,4 +301,11 @@ const s = StyleSheet.create({
   rowSub: { color: C.faint, fontSize: 12, marginTop: 3 },
   remove: { color: C.faint, fontSize: 16, padding: 6 },
   chev: { color: C.faint, fontSize: 22 },
+  muteRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  muteAdd: { width: 38, height: 38, borderRadius: 19, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
+  muteAddText: { color: '#fff', fontSize: 20, fontWeight: '700' },
+  muteChips: { flexDirection: 'row', flexWrap: 'wrap' },
+  mchip: { backgroundColor: C.card2, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 7, marginRight: 8, marginBottom: 8, borderWidth: 1, borderColor: C.border },
+  mchipAnime: { borderColor: C.accent },
+  mchipText: { color: C.text, fontSize: 12, fontWeight: '600' },
 });

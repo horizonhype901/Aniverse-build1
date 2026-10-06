@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { BottomTabBar, createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { C } from './theme';
+import { ensureSeeded, store } from './lib/store';
 import MiniPlayer from './components/MiniPlayer';
 import FeedScreen from './screens/FeedScreen';
 import DiscoverScreen from './screens/DiscoverScreen';
@@ -13,6 +14,7 @@ import PostDetailScreen from './screens/PostDetailScreen';
 import ComposerScreen from './screens/ComposerScreen';
 import AnimeDetailScreen from './screens/AnimeDetailScreen';
 import ShowDetailScreen from './screens/ShowDetailScreen';
+import OnboardingScreen from './screens/OnboardingScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -53,6 +55,29 @@ function Tabs() {
 }
 
 export default function RootNavigator() {
+  const [ready, setReady] = useState(false);
+  const [onboarded, setOnboarded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      await ensureSeeded();
+      setOnboarded((await store.onboarded()) === 'yes');
+      setReady(true);
+    })();
+  }, []);
+
+  if (!ready) {
+    return (
+      <View style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: C.primary, fontSize: 30, fontWeight: '900' }}>AniVerse</Text>
+      </View>
+    );
+  }
+
+  if (!onboarded) {
+    return <OnboardingScreen onDone={() => setOnboarded(true)} />;
+  }
+
   return (
     <NavigationContainer>
       <Stack.Navigator

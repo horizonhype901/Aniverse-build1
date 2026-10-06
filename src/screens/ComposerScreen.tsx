@@ -23,6 +23,7 @@ export default function ComposerScreen() {
   const [pollOn, setPollOn] = useState(false);
   const [pollQ, setPollQ] = useState('');
   const [pollOpts, setPollOpts] = useState(['', '']);
+  const [prediction, setPrediction] = useState(false);
 
   const setOpt = (i: number, v: string) => {
     const n = [...pollOpts];
@@ -58,6 +59,7 @@ export default function ComposerScreen() {
             id: `poll-u-${Date.now()}`,
             question: pollQ.trim(),
             options: cleanOpts.map((t) => ({ text: t, votes: 0 })),
+            prediction: prediction || undefined,
           }
         : undefined,
       createdAt: Date.now(),
@@ -131,6 +133,11 @@ export default function ComposerScreen() {
                 <Text style={s.addOpt}>＋ Add option</Text>
               </Pressable>
             )}
+            <View style={s.row}>
+              <Text style={s.rowLabel}>🔮 This is a prediction</Text>
+              <Switch value={prediction} onValueChange={setPrediction}
+                trackColor={{ true: C.gold }} thumbColor="#fff" />
+            </View>
           </View>
         )}
         <View style={{ height: 40 }} />

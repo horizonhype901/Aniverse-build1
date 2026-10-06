@@ -3,7 +3,7 @@ export type Topic =
   | 'News' | 'Hot Takes' | 'Help' | 'General';
 
 export interface PollOption { text: string; votes: number; }
-export interface Poll { id: string; question: string; options: PollOption[]; }
+export interface Poll { id: string; question: string; options: PollOption[]; prediction?: boolean; }
 
 export interface Post {
   id: string;
@@ -27,6 +27,7 @@ export interface Comment {
   body: string;
   createdAt: number;
   likes: number;
+  parentId?: string;
 }
 
 export interface AnimeItem {
@@ -61,7 +62,13 @@ export interface Episode {
   description: string;
 }
 
-export type WatchStatus = 'watching' | 'completed' | 'plan';
-export interface WatchEntry { anime: AnimeItem; status: WatchStatus; addedAt: number; }
+export type WatchStatus = 'watching' | 'completed' | 'plan' | 'dropped' | 'onhold';
+export interface WatchEntry { anime: AnimeItem; status: WatchStatus; addedAt: number; note?: string; }
+
+export interface ProgressEntry { title: string; watched: number; total?: number; hideSpoilers: boolean; }
+
+export interface ListeningStats { episodesCompleted: number; secondsListened: number; completedIds: string[]; }
+
+export interface Mutes { words: string[]; anime: string[]; }
 
 export interface Profile { username: string; bio: string; color: string; }

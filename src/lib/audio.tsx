@@ -3,6 +3,7 @@ import React, {
 } from 'react';
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import type { Episode, PodcastShow } from '../types';
+import { store } from './store';
 
 export interface NowPlaying { episode: Episode; show: PodcastShow; queue: Episode[]; }
 
@@ -36,25 +37,75 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [rate, setRateState] = useState(1);
   const nowRef = useRef(now);
   nowRef.current = now;
+  const statusRef = useRef(status);
+  statusRef.current = status;
   const wasPlaying = useRef(false);
+  // listening-stats session tracking
+  const sessionRef = useRef<{ epId: string | null; start: number }>({ epId: null, start: 0 });
 
   useEffect(() => {
     setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true }).catch(() => {});
   }, []);
 
+  const flushStats = useCallback(async () => {
+    const s = sessionRef.current;
+    sessionRef.current = { epId: null, start: 0 };
+    if (!s.epId) return;
+    const elapsed = (Date.now() - s.start) / 1000;
+    if (elapsed < 5) return;
+    const st = statusRef.current;
+    const ratio = st.duration > 0 ? st.currentTime / st.duration : 0;
+    const l = await store.listening();
+    l.secondsListened += Math.round(elapsed);
+    if (ratio >= 0.9 && !l.completedIds.includes(s.epId)) {
+      l.completedIds.push(s.epId);
+      l.episodesCompleted += 1;
+    }
+    await store.saveListening(l);
+  }, []);
+
+  const beginSession = useCallback((epId: string) => {
+    sessionRef.current = { epId, start: Date.now() };
+  }, []);
+
+  // periodic flush while playing (every 60s)
+  useEffect(() => {
+    if (!status.playing) return;
+    const t = setInterval(() => {
+      flushStats().then(() => {
+        const n = nowRef.current;
+        if (n) beginSession(n.episode.id);
+      });
+    }, 60000);
+    return () => clearInterval(t);
+  }, [status.playing, flushStats, beginSession]);
+
   const play = useCallback(
     (ep: Episode, show: PodcastShow, queue: Episode[] = []) => {
+      flushStats().then(() => beginSession(ep.id));
       setNow({ episode: ep, show, queue });
       player.replace({ uri: ep.audioUrl });
       player.play();
     },
-    [player]
+    [player, flushStats, beginSession]
   );
 
   const toggle = useCallback(() => {
-    if (status.playing) player.pause();
-    else player.play();
-  }, [player, status.playing]);
+    if (status.playing) {
+      player.pause();
+      flushStats().then(() => {
+        const n = nowRef.current;
+        if (n && statusRef.current.playing === false) {
+          // session stays open for resume; restart timer from now
+          beginSession(n.episode.id);
+        }
+      });
+    } else {
+      const n = nowRef.current;
+      if (n) beginSession(n.episode.id);
+      player.play();
+    }
+  }, [player, status.playing, flushStats, beginSession]);
 
   const seekBy = useCallback(
     (sec: number) => player.seekTo(Math.max(0, status.currentTime + sec)),
@@ -77,19 +128,21 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       const j = i + dir;
       if (j >= 0 && j < n.queue.length) {
         const ep = n.queue[j];
+        flushStats().then(() => beginSession(ep.id));
         setNow({ ...n, episode: ep });
         player.replace({ uri: ep.audioUrl });
         player.play();
       }
     },
-    [player]
+    [player, flushStats, beginSession]
   );
   const next = useCallback(() => step(1), [step]);
   const prev = useCallback(() => step(-1), [step]);
   const close = useCallback(() => {
     player.pause();
+    flushStats();
     setNow(null);
-  }, [player]);
+  }, [player, flushStats]);
 
   // Auto-advance when an episode finishes
   useEffect(() => {
@@ -103,6 +156,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
     wasPlaying.current = status.playing;
   }, [status, step]);
+
+  // Flush stats on unmount
+  useEffect(() => () => { flushStats(); }, [flushStats]);
 
   return (
     <Ctx.Provider

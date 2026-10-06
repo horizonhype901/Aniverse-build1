@@ -6,7 +6,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { C, R } from '../theme';
 import { searchAnime, seasonNow, topAiring } from '../lib/api';
-import { FALLBACK_ANIME } from '../data/seed';
+import { FALLBACK_ANIME, VIBES, ANIME_VIBES, Vibe } from '../data/seed';
 import { AnimeItem } from '../types';
 import AnimeCard from '../components/AnimeCard';
 
@@ -37,6 +37,7 @@ export default function DiscoverScreen() {
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState('');
   const [offline, setOffline] = useState(false);
+  const [vibe, setVibe] = useState<'All' | Vibe>('All');
 
   const load = async () => {
     setLoading(true);
@@ -82,6 +83,7 @@ export default function DiscoverScreen() {
 
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
   const aotd = airing.length > 0 ? airing[dayOfYear % airing.length] : null;
+  const vibeMatches = vibe === 'All' ? [] : FALLBACK_ANIME.filter((a) => (ANIME_VIBES[a.id] || []).includes(vibe));
 
   return (
     <View style={s.root}>
@@ -127,20 +129,53 @@ export default function DiscoverScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-          {aotd && (
-            <Pressable style={s.aotd} onPress={() => open(aotd)}>
-              <Image source={{ uri: aotd.image }} style={s.aotdImg} />
-              <View style={{ flex: 1 }}>
-                <Text style={s.aotdKicker}>✨ ANIME OF THE DAY</Text>
-                <Text style={s.aotdTitle} numberOfLines={2}>{aotd.title}</Text>
-                <Text style={s.aotdMeta}>
-                  {aotd.score ? `⭐ ${aotd.score.toFixed(2)}  ` : ''}{aotd.genres.slice(0, 2).join(' • ')}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 4 }}>
+            {(['All', ...VIBES] as const).map((v) => (
+              <Pressable key={v} onPress={() => setVibe(v)}
+                style={[s.vchip, vibe === v && s.vchipActive]}>
+                <Text style={[s.vchipText, vibe === v && { color: '#fff' }]}>
+                  {v === 'All' ? '✨ All vibes' : v}
                 </Text>
-              </View>
-            </Pressable>
+              </Pressable>
+            ))}
+          </ScrollView>
+          {vibe !== 'All' ? (
+            <View>
+              <Text style={s.sectionTitle}>🎭 {vibe} anime</Text>
+              <FlatList
+                data={vibeMatches}
+                keyExtractor={(x) => String(x.id)}
+                numColumns={3}
+                scrollEnabled={false}
+                contentContainerStyle={{ padding: 12 }}
+                columnWrapperStyle={{ justifyContent: 'flex-start' }}
+                renderItem={({ item }) => (
+                  <View style={{ marginRight: 12, marginBottom: 12 }}>
+                    <AnimeCard anime={item} onPress={() => open(item)} width={110} />
+                  </View>
+                )}
+                ListEmptyComponent={<Text style={s.empty}>No {vibe} anime in the catalog yet.</Text>}
+              />
+            </View>
+          ) : (
+            <>
+              {aotd && (
+                <Pressable style={s.aotd} onPress={() => open(aotd)}>
+                  <Image source={{ uri: aotd.image }} style={s.aotdImg} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.aotdKicker}>✨ ANIME OF THE DAY</Text>
+                    <Text style={s.aotdTitle} numberOfLines={2}>{aotd.title}</Text>
+                    <Text style={s.aotdMeta}>
+                      {aotd.score ? `⭐ ${aotd.score.toFixed(2)}  ` : ''}{aotd.genres.slice(0, 2).join(' • ')}
+                    </Text>
+                  </View>
+                </Pressable>
+              )}
+              <Section title="🔥 Airing Now" items={airing} onPress={open} />
+              <Section title="📅 This Season" items={season} onPress={open} />
+            </>
           )}
-          <Section title="🔥 Airing Now" items={airing} onPress={open} />
-          <Section title="📅 This Season" items={season} onPress={open} />
         </ScrollView>
       )}
     </View>
@@ -158,6 +193,9 @@ const s = StyleSheet.create({
   clearText: { color: C.muted, fontSize: 16 },
   section: { marginTop: 14 },
   sectionTitle: { color: C.text, fontSize: 17, fontWeight: '800', marginHorizontal: 14, marginBottom: 8 },
+  vchip: { borderWidth: 1, borderColor: C.border, backgroundColor: C.card, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 7, marginRight: 8 },
+  vchipActive: { backgroundColor: C.secondary, borderColor: C.secondary },
+  vchipText: { color: C.muted, fontWeight: '700', fontSize: 12 },
   empty: { color: C.faint, textAlign: 'center', marginTop: 60, fontSize: 15 },
   errBox: { alignItems: 'center', marginTop: 60, paddingHorizontal: 30 },
   errText: { color: C.muted, textAlign: 'center', marginBottom: 12 },

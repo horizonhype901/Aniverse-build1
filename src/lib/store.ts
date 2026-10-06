@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Comment, Post, Profile, WatchEntry } from '../types';
-import { SEED_COMMENTS, SEED_POSTS } from '../data/seed';
+import { Comment, ListeningStats, Mutes, Post, Profile, ProgressEntry, Topic, WatchEntry } from '../types';
+import { SEED_COMMENTS, SEED_POSTS, SEED_REACTIONS } from '../data/seed';
 
 export const K = {
   posts: 'aniverse:posts:v1',
@@ -12,6 +12,15 @@ export const K = {
   profile: 'aniverse:profile:v1',   // Profile
   subs: 'aniverse:subs:v1',         // PodcastShow[]
   seeded: 'aniverse:seeded:v1',
+  reactions: 'aniverse:reactions:v1',   // Record<postId, Record<emoji, number>>
+  myReactions: 'aniverse:myReactions:v1', // Record<postId, emoji>
+  mutes: 'aniverse:mutes:v1',           // Mutes
+  predictions: 'aniverse:predictions:v1', // Record<pollId, 'right'|'wrong'>
+  listening: 'aniverse:listening:v1',   // ListeningStats
+  checkins: 'aniverse:checkins:v1',     // string[] YYYY-MM-DD
+  onboarded: 'aniverse:onboarded:v1',
+  progress: 'aniverse:progress:v1',     // Record<animeId, ProgressEntry>
+  favTopics: 'aniverse:favTopics:v1',   // Topic[]
 };
 
 async function get<T>(key: string, fb: T): Promise<T> {
@@ -30,7 +39,12 @@ async function set(key: string, v: unknown): Promise<void> {
 /** First-run seeding so the feed feels alive. */
 export async function ensureSeeded(): Promise<void> {
   const done = await get<string | null>(K.seeded, null);
-  if (done) return;
+  if (done) {
+    // v1 users upgrading: skip the new onboarding quiz, keep their data
+    const ob = await get<string | null>(K.onboarded, null);
+    if (!ob) await set(K.onboarded, 'yes');
+    return;
+  }
   await set(K.posts, SEED_POSTS);
   await set(K.comments, SEED_COMMENTS);
   await set(K.likes, []);
@@ -43,6 +57,14 @@ export async function ensureSeeded(): Promise<void> {
     color: '#FF4D6D',
   } as Profile);
   await set(K.subs, []);
+  await set(K.reactions, SEED_REACTIONS);
+  await set(K.myReactions, {});
+  await set(K.mutes, { words: [], anime: [] } as Mutes);
+  await set(K.predictions, {});
+  await set(K.listening, { episodesCompleted: 0, secondsListened: 0, completedIds: [] } as ListeningStats);
+  await set(K.checkins, []);
+  await set(K.progress, {});
+  await set(K.favTopics, []);
   await set(K.seeded, 'yes');
 }
 
@@ -71,4 +93,30 @@ export const store = {
   // podcast subscriptions
   subs: () => get<import('../types').PodcastShow[]>(K.subs, []),
   saveSubs: (s: import('../types').PodcastShow[]) => set(K.subs, s),
+  // reactions
+  reactions: () => get<Record<string, Record<string, number>>>(K.reactions, {}),
+  saveReactions: (r: Record<string, Record<string, number>>) => set(K.reactions, r),
+  myReactions: () => get<Record<string, string>>(K.myReactions, {}),
+  saveMyReactions: (r: Record<string, string>) => set(K.myReactions, r),
+  // mutes
+  mutes: () => get<Mutes>(K.mutes, { words: [], anime: [] }),
+  saveMutes: (m: Mutes) => set(K.mutes, m),
+  // predictions
+  predictions: () => get<Record<string, 'right' | 'wrong'>>(K.predictions, {}),
+  savePredictions: (p: Record<string, 'right' | 'wrong'>) => set(K.predictions, p),
+  // listening stats
+  listening: () =>
+    get<ListeningStats>(K.listening, { episodesCompleted: 0, secondsListened: 0, completedIds: [] }),
+  saveListening: (l: ListeningStats) => set(K.listening, l),
+  // daily check-ins (YYYY-MM-DD)
+  checkins: () => get<string[]>(K.checkins, []),
+  saveCheckins: (c: string[]) => set(K.checkins, c),
+  // per-anime watch progress
+  progress: () => get<Record<number, ProgressEntry>>(K.progress, {}),
+  saveProgress: (p: Record<number, ProgressEntry>) => set(K.progress, p),
+  // onboarding
+  onboarded: () => get<string | null>(K.onboarded, null),
+  setOnboarded: () => set(K.onboarded, 'yes'),
+  favTopics: () => get<Topic[]>(K.favTopics, []),
+  saveFavTopics: (t: Topic[]) => set(K.favTopics, t),
 };
