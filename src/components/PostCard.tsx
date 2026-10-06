@@ -112,6 +112,7 @@ interface Props {
   onVote: (i: number) => void;
   onMarkPrediction?: (m: 'right' | 'wrong') => void;
   expanded?: boolean;
+  onAvatarPress?: () => void;
 }
 
 export default function PostCard(p: Props) {
@@ -139,7 +140,9 @@ export default function PostCard(p: Props) {
   const body = (
     <>
       <View style={s.head}>
-        <Avatar name={post.author} color={post.authorColor} avatar={post.avatar} photoUri={post.photoUri} />
+        <Pressable onPress={p.onAvatarPress}>
+          <Avatar name={post.author} color={post.authorColor} avatar={post.avatar} photoUri={post.photoUri} />
+        </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={s.author}>{post.author}</Text>
           <Text style={s.time}>{timeAgo(post.createdAt)}</Text>

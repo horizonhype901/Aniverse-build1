@@ -87,8 +87,13 @@ export const store = {
   watchlist: () => get<WatchEntry[]>(K.watch, []),
   saveWatchlist: (w: WatchEntry[]) => set(K.watch, w),
   // profile
-  profile: () =>
-    get<Profile>(K.profile, { username: 'NewOtaku', bio: '', color: '#FF4D6D' }),
+  profile: async () => {
+    const p = await get<Profile>(K.profile, { username: 'NewOtaku', bio: '', color: '#FF4D6D', banner: 0 });
+    // migrate older profiles
+    if (p.banner === undefined) p.banner = 0;
+    if (!Array.isArray(p.showcase)) p.showcase = [];
+    return p;
+  },
   saveProfile: (p: Profile) => set(K.profile, p),
   // podcast subscriptions
   subs: () => get<import('../types').PodcastShow[]>(K.subs, []),

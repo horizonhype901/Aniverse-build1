@@ -8,6 +8,9 @@ import { store } from '../lib/store';
 import { ListeningStats, Mutes, PodcastShow, Post, Profile, ProgressEntry, WatchEntry, WatchStatus } from '../types';
 import { Avatar } from '../components/PostCard';
 import { fmtClock } from '../lib/format';
+import { BannerView } from '../profile/Banner';
+import AnthemCard from '../profile/AnthemCard';
+import { FALLBACK_ANIME } from '../data/seed';
 
 const FILTERS: { key: WatchStatus | 'all'; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -35,7 +38,7 @@ function streakDays(days: string[]): number {
 
 export default function ProfileScreen() {
   const nav = useNavigation<any>();
-  const [profile, setProfile] = useState<Profile>({ username: '', bio: '', color: COLORS[0] });
+  const [profile, setProfile] = useState<Profile>({ username: '', bio: '', color: COLORS[0], banner: 0 });
   const [editing, setEditing] = useState(false);
   const [watch, setWatch] = useState<WatchEntry[]>([]);
   const [subs, setSubs] = useState<PodcastShow[]>([]);
@@ -106,6 +109,12 @@ export default function ProfileScreen() {
 
   const shown = watch.filter((x) => filter === 'all' || x.status === filter);
 
+  const showcaseAnime = (profile.showcase ?? [])
+    .map((id) => watch.find((w) => w.anime.id === id)?.anime ?? FALLBACK_ANIME.find((a) => a.id === id))
+    .filter(Boolean) as { id: number; title: string; image?: string }[];
+  const pinnedPost = myPosts.find((x) => x.id === profile.pinnedPostId);
+  const otherPosts = myPosts.filter((x) => x.id !== profile.pinnedPostId);
+
   // ---- stats ----
   const epsWatched = Object.values(progress).reduce((a, e) => a + e.watched, 0);
   const hoursWatched = (epsWatched * 24) / 60;
@@ -120,13 +129,13 @@ export default function ProfileScreen() {
     <View style={s.root}>
       <View style={s.header}><Text style={s.title}>Profile</Text></View>
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-        <View style={s.card}>
-          <View style={s.topRow}>
-            <Avatar name={profile.username || '?'} color={profile.color} size={64} avatar={profile.avatar} photoUri={profile.photoUri} />
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Pressable style={s.avatarBtn} onPress={() => nav.navigate('AvatarStudio')}>
-                <Text style={s.avatarBtnText}>🎨 Edit avatar</Text>
-              </Pressable>
+        <View style={[s.card, { padding: 0, overflow: 'hidden' }]}>
+          <BannerView banner={profile.banner ?? 0} bannerPhoto={profile.bannerPhoto} height={100} />
+          <View style={[s.topRow, { marginTop: -28, paddingHorizontal: 14 }]}>
+            <View style={s.avatarRing}>
+              <Avatar name={profile.username || '?'} color={profile.color} size={64} avatar={profile.avatar} photoUri={profile.photoUri} />
+            </View>
+            <View style={{ flex: 1, marginLeft: 12, paddingTop: 28 }}>
               {editing ? (
                 <>
                   <TextInput style={s.edit} value={profile.username}
@@ -150,9 +159,40 @@ export default function ProfileScreen() {
               )}
             </View>
           </View>
-          <Pressable style={s.editBtn} onPress={() => (editing ? save() : setEditing(true))}>
-            <Text style={s.editBtnText}>{editing ? '✓ Save' : '✏️ Edit profile'}</Text>
-          </Pressable>
+          <View style={{ paddingHorizontal: 14, paddingBottom: 14 }}>
+            {!!profile.anthem && <AnthemCard anthem={profile.anthem} />}
+            {showcaseAnime.length > 0 && (
+              <>
+                <Text style={s.showTitle}>⭐ Favorites</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {showcaseAnime.map((a) => (
+                    <Pressable key={a.id} style={s.showTile}
+                      onPress={() => nav.navigate('AnimeDetail', { anime: a })}>
+                      {a.image ? (
+                        <Image source={{ uri: a.image }} style={s.showImg} />
+                      ) : (
+                        <View style={[s.showImg, s.showFallback]}>
+                          <Text style={s.showFallbackText}>{a.title.charAt(0)}</Text>
+                        </View>
+                      )}
+                      <Text style={s.showName} numberOfLines={2}>{a.title}</Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </>
+            )}
+            <View style={s.profileBtns}>
+              <Pressable style={s.editBtn} onPress={() => (editing ? save() : setEditing(true))}>
+                <Text style={s.editBtnText}>{editing ? '✓ Save' : '✏️ Edit'}</Text>
+              </Pressable>
+              <Pressable style={s.avatarBtn} onPress={() => nav.navigate('AvatarStudio')}>
+                <Text style={s.avatarBtnText}>🎨 Avatar</Text>
+              </Pressable>
+              <Pressable style={s.studioBtn} onPress={() => nav.navigate('ProfileStudio')}>
+                <Text style={s.studioBtnText}>🛠️ Customize</Text>
+              </Pressable>
+            </View>
+          </View>
         </View>
 
         <View style={s.stats}>
@@ -255,16 +295,33 @@ export default function ProfileScreen() {
         <Text style={s.secTitle}>💬 My Posts</Text>
         {myPosts.length === 0 ? (
           <Text style={s.empty}>You haven't posted yet — tap ＋ on the Feed</Text>
-        ) : myPosts.map((x) => (
-          <Pressable key={x.id} style={s.row}
-            onPress={() => nav.navigate('PostDetail', { postId: x.id })}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.rowTitle} numberOfLines={2}>{x.title}</Text>
-              <Text style={s.rowSub}>💬 {x.topic}</Text>
-            </View>
-            <Text style={s.chev}>›</Text>
-          </Pressable>
-        ))}
+        ) : (
+          <>
+            {pinnedPost && (
+              <>
+                <Text style={s.pinLabel}>📌 Pinned</Text>
+                <Pressable style={[s.row, s.pinRow]}
+                  onPress={() => nav.navigate('PostDetail', { postId: pinnedPost.id })}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.rowTitle} numberOfLines={2}>{pinnedPost.title}</Text>
+                    <Text style={s.rowSub}>💬 {pinnedPost.topic}</Text>
+                  </View>
+                  <Text style={s.chev}>›</Text>
+                </Pressable>
+              </>
+            )}
+            {otherPosts.map((x) => (
+              <Pressable key={x.id} style={s.row}
+                onPress={() => nav.navigate('PostDetail', { postId: x.id })}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.rowTitle} numberOfLines={2}>{x.title}</Text>
+                  <Text style={s.rowSub}>💬 {x.topic}</Text>
+                </View>
+                <Text style={s.chev}>›</Text>
+              </Pressable>
+            ))}
+          </>
+        )}
       </ScrollView>
     </View>
   );
@@ -286,6 +343,18 @@ const s = StyleSheet.create({
   editBtnText: { color: C.secondary, fontWeight: '800' },
   avatarBtn: { alignSelf: 'flex-start', marginTop: 8, backgroundColor: C.primary, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 7 },
   avatarBtnText: { color: '#fff', fontWeight: '800' },
+  avatarRing: { borderWidth: 3, borderColor: C.card, borderRadius: 35, overflow: 'hidden' },
+  profileBtns: { flexDirection: 'row', marginTop: 12 },
+  studioBtn: { alignSelf: 'flex-start', marginTop: 10, backgroundColor: C.secondary, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 7, marginLeft: 8 },
+  studioBtnText: { color: '#fff', fontWeight: '800' },
+  showTitle: { color: C.text, fontWeight: '800', fontSize: 14, marginTop: 12, marginBottom: 8 },
+  showTile: { width: 84, marginRight: 10 },
+  showImg: { width: 84, height: 112, borderRadius: 10, backgroundColor: C.card2 },
+  showFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface },
+  showFallbackText: { color: C.primary, fontSize: 28, fontWeight: '900' },
+  showName: { color: C.text, fontSize: 11, fontWeight: '600', marginTop: 4 },
+  pinLabel: { color: C.gold, fontWeight: '800', fontSize: 13, marginHorizontal: 16, marginTop: 4 },
+  pinRow: { borderColor: C.gold, borderWidth: 1 },
   stats: { flexDirection: 'row', marginHorizontal: 12, marginBottom: 6 },
   stat: { flex: 1, backgroundColor: C.card, borderRadius: R.md, padding: 12, alignItems: 'center', marginHorizontal: 4, borderWidth: 1, borderColor: C.border },
   statN: { color: C.text, fontSize: 20, fontWeight: '900' },

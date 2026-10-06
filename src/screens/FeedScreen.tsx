@@ -187,6 +187,7 @@ export default function FeedScreen() {
               strictSpoiler={strict}
               onReact={(e) => toggleReaction(item, e)}
               onOpen={() => nav.navigate('PostDetail', { postId: item.id })}
+              onAvatarPress={() => nav.navigate('UserProfile', { author: item.author })}
               onVote={(i) => item.poll && castVote(item.poll, i)}
               onMarkPrediction={(m) => item.poll && markPrediction(item.poll, m)}
             />

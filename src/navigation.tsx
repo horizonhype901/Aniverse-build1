@@ -16,6 +16,8 @@ import AnimeDetailScreen from './screens/AnimeDetailScreen';
 import ShowDetailScreen from './screens/ShowDetailScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
 import AvatarStudioScreen from './avatar/AvatarStudioScreen';
+import ProfileStudioScreen from './profile/ProfileStudioScreen';
+import UserProfileScreen from './profile/UserProfileScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -94,6 +96,8 @@ export default function RootNavigator() {
         <Stack.Screen name="AnimeDetail" component={AnimeDetailScreen} />
         <Stack.Screen name="ShowDetail" component={ShowDetailScreen} />
         <Stack.Screen name="AvatarStudio" component={AvatarStudioScreen} />
+        <Stack.Screen name="ProfileStudio" component={ProfileStudioScreen} />
+        <Stack.Screen name="UserProfile" component={UserProfileScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

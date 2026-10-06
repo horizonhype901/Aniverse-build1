@@ -145,7 +145,9 @@ export default function PostDetailScreen() {
   const renderComment = (c: Comment, nested = false) => (
     <View key={c.id}>
       <View style={[s.comment, nested && s.nested]}>
-        <Avatar name={c.author} color={c.authorColor} size={nested ? 28 : 34} avatar={c.avatar} photoUri={c.photoUri} />
+        <Pressable onPress={() => nav.navigate('UserProfile', { author: c.author })}>
+          <Avatar name={c.author} color={c.authorColor} size={nested ? 28 : 34} avatar={c.avatar} photoUri={c.photoUri} />
+        </Pressable>
         <View style={{ flex: 1 }}>
           <View style={s.cHead}>
             <Text style={s.cAuthor}>{c.author}</Text>
