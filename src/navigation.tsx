@@ -15,6 +15,7 @@ import ComposerScreen from './screens/ComposerScreen';
 import AnimeDetailScreen from './screens/AnimeDetailScreen';
 import ShowDetailScreen from './screens/ShowDetailScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
+import AvatarStudioScreen from './avatar/AvatarStudioScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -92,6 +93,7 @@ export default function RootNavigator() {
         />
         <Stack.Screen name="AnimeDetail" component={AnimeDetailScreen} />
         <Stack.Screen name="ShowDetail" component={ShowDetailScreen} />
+        <Stack.Screen name="AvatarStudio" component={AvatarStudioScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

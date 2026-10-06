@@ -1,12 +1,39 @@
 import React, { useState } from 'react';
-import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { C, R, TOPIC_COLORS } from '../theme';
 import { REACTION_EMOJIS } from '../data/seed';
-import { Poll, Post } from '../types';
+import { avatarFor } from '../avatar/options';
+import { AvatarConfig, Poll, Post } from '../types';
 import { compact, timeAgo } from '../lib/format';
+import AvatarRenderer from '../avatar/AvatarRenderer';
 
-export function Avatar({ name, color, size = 40 }: { name: string; color: string; size?: number }) {
+export function Avatar({
+  name, color, size = 40, avatar, photoUri,
+}: {
+  name: string;
+  color: string;
+  size?: number;
+  avatar?: AvatarConfig | null;
+  photoUri?: string | null;
+}) {
+  const cfg = avatar ?? avatarFor(name);
+  if (photoUri) {
+    return (
+      <Image
+        source={{ uri: photoUri }}
+        style={{ width: size, height: size, borderRadius: size / 2, marginRight: 10, backgroundColor: C.card2 }}
+      />
+    );
+  }
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden', marginRight: 10 }}>
+      <AvatarRenderer config={cfg} size={size} />
+    </View>
+  );
+}
+
+export function InitialAvatar({ name, color, size = 40 }: { name: string; color: string; size?: number }) {
   return (
     <View style={[s.avatar, { backgroundColor: color, width: size, height: size, borderRadius: size / 2 }]}>
       <Text style={[s.avatarText, { fontSize: size * 0.42 }]}>{name.charAt(0).toUpperCase()}</Text>
@@ -112,7 +139,7 @@ export default function PostCard(p: Props) {
   const body = (
     <>
       <View style={s.head}>
-        <Avatar name={post.author} color={post.authorColor} />
+        <Avatar name={post.author} color={post.authorColor} avatar={post.avatar} photoUri={post.photoUri} />
         <View style={{ flex: 1 }}>
           <Text style={s.author}>{post.author}</Text>
           <Text style={s.time}>{timeAgo(post.createdAt)}</Text>

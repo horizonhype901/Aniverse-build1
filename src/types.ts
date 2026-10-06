@@ -9,6 +9,8 @@ export interface Post {
   id: string;
   author: string;
   authorColor: string;
+  avatar?: AvatarConfig | null;
+  photoUri?: string | null;
   topic: Topic;
   title: string;
   body: string;
@@ -24,6 +26,8 @@ export interface Comment {
   postId: string;
   author: string;
   authorColor: string;
+  avatar?: AvatarConfig | null;
+  photoUri?: string | null;
   body: string;
   createdAt: number;
   likes: number;
@@ -71,4 +75,17 @@ export interface ListeningStats { episodesCompleted: number; secondsListened: nu
 
 export interface Mutes { words: string[]; anime: string[]; }
 
-export interface Profile { username: string; bio: string; color: string; }
+export interface Profile { username: string; bio: string; color: string; avatar?: AvatarConfig | null; photoUri?: string | null; }
+
+export interface AvatarConfig {
+  skin: number;
+  face: number;
+  eyes: number;
+  eyeColor: number;
+  brows: number;
+  mouth: number;
+  hair: number;
+  hairColor: number;
+  accessory: number;
+  bg: number;
+}

@@ -49,6 +49,8 @@ export default function ComposerScreen() {
       id: `u-${Date.now()}`,
       author: profile.username,
       authorColor: profile.color,
+      avatar: profile.avatar ?? null,
+      photoUri: profile.photoUri ?? null,
       topic,
       title: title.trim(),
       body: body.trim(),

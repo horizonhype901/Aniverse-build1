@@ -122,8 +122,11 @@ export default function ProfileScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
         <View style={s.card}>
           <View style={s.topRow}>
-            <Avatar name={profile.username || '?'} color={profile.color} size={64} />
+            <Avatar name={profile.username || '?'} color={profile.color} size={64} avatar={profile.avatar} photoUri={profile.photoUri} />
             <View style={{ flex: 1, marginLeft: 12 }}>
+              <Pressable style={s.avatarBtn} onPress={() => nav.navigate('AvatarStudio')}>
+                <Text style={s.avatarBtnText}>🎨 Edit avatar</Text>
+              </Pressable>
               {editing ? (
                 <>
                   <TextInput style={s.edit} value={profile.username}
@@ -281,6 +284,8 @@ const s = StyleSheet.create({
   dotActive: { borderWidth: 2, borderColor: '#fff' },
   editBtn: { alignSelf: 'flex-start', marginTop: 10, backgroundColor: C.card2, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 7 },
   editBtnText: { color: C.secondary, fontWeight: '800' },
+  avatarBtn: { alignSelf: 'flex-start', marginTop: 8, backgroundColor: C.primary, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 7 },
+  avatarBtnText: { color: '#fff', fontWeight: '800' },
   stats: { flexDirection: 'row', marginHorizontal: 12, marginBottom: 6 },
   stat: { flex: 1, backgroundColor: C.card, borderRadius: R.md, padding: 12, alignItems: 'center', marginHorizontal: 4, borderWidth: 1, borderColor: C.border },
   statN: { color: C.text, fontSize: 20, fontWeight: '900' },

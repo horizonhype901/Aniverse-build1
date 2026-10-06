@@ -112,6 +112,8 @@ export default function PostDetailScreen() {
       postId: post.id,
       author: profile.username,
       authorColor: profile.color,
+      avatar: profile.avatar ?? null,
+      photoUri: profile.photoUri ?? null,
       body: draft.trim(),
       createdAt: Date.now(),
       likes: 0,
@@ -143,7 +145,7 @@ export default function PostDetailScreen() {
   const renderComment = (c: Comment, nested = false) => (
     <View key={c.id}>
       <View style={[s.comment, nested && s.nested]}>
-        <Avatar name={c.author} color={c.authorColor} size={nested ? 28 : 34} />
+        <Avatar name={c.author} color={c.authorColor} size={nested ? 28 : 34} avatar={c.avatar} photoUri={c.photoUri} />
         <View style={{ flex: 1 }}>
           <View style={s.cHead}>
             <Text style={s.cAuthor}>{c.author}</Text>
