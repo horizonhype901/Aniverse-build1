@@ -40,7 +40,7 @@ jobs:
             -workspace AniVerse.xcworkspace \
             -scheme AniVerse \
             -configuration Debug \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO
 
