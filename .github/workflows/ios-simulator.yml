@@ -33,20 +33,21 @@ jobs:
         env:
           COCOAPODS_DISABLE_STATS: 'true'
 
+      # NOTE: Release (not Debug) — Debug expects a Metro server; Release bundles the JS.
       - name: Build for iOS Simulator
         run: |
           cd ios
           xcodebuild \
             -workspace AniVerse.xcworkspace \
             -scheme AniVerse \
-            -configuration Debug \
+            -configuration Release \
             -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Package .app
         run: |
-          cd ios/build/Build/Products/Debug-iphonesimulator
+          cd ios/build/Build/Products/Release-iphonesimulator
           tar czf "$GITHUB_WORKSPACE/aniverse-ios-simulator.tar.gz" AniVerse.app
 
       - name: Upload simulator app
