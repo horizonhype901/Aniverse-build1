@@ -33,12 +33,24 @@ jobs:
       - name: Generate native Android project
         run: npx expo prebuild --platform android --non-interactive
 
-      - name: Build debug APK (JS bundled for sideloading)
-        run: cd android && ./gradlew assembleDebug --no-daemon -q -PbundleInDebug=true
+      - name: Generate debug keystore (for sideload signing)
+        run: >
+          keytool -genkey -v -keystore /tmp/debug.keystore
+          -alias androiddebugkey -storepass android -keypass android
+          -keyalg RSA -keysize 2048 -validity 10000
+          -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Build release APK (JS always bundled in release)
+        run: >
+          cd android && ./gradlew assembleRelease --no-daemon -q
+          -Pandroid.injected.signing.store.file=/tmp/debug.keystore
+          -Pandroid.injected.signing.store.password=android
+          -Pandroid.injected.signing.key.alias=androiddebugkey
+          -Pandroid.injected.signing.key.password=android
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: aniverse-v5-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
