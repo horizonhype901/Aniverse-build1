@@ -1,12 +1,10 @@
 # Builds an installable Android APK with GitHub Actions (free tier) —
-# no Expo EAS quota needed. Trigger manually from the Actions tab, or on
-# every push to main.
+# no Expo EAS quota needed. Trigger manually from the Actions tab
+# ("Run workflow") — pushes do not auto-build to save free minutes.
 name: Android APK
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
 
 jobs:
   build:

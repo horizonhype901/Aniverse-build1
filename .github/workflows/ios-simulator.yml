@@ -1,0 +1,57 @@
+# Builds an iOS Simulator .app with GitHub Actions (free tier) —
+# install it on a Mac's iPhone Simulator. No Apple Developer account needed.
+# Trigger manually from the Actions tab.
+name: iOS Simulator App
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore: ['.github/workflows/android-apk.yml']
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate native iOS project
+        run: npx expo prebuild --platform ios --non-interactive
+
+      - name: Install CocoaPods
+        run: cd ios && pod install --no-repo-update
+        env:
+          COCOAPODS_DISABLE_STATS: 'true'
+
+      - name: Build for iOS Simulator
+        run: |
+          cd ios
+          xcodebuild \
+            -workspace AniVerse.xcworkspace \
+            -scheme AniVerse \
+            -configuration Debug \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Package .app
+        run: |
+          cd ios/build/Build/Products/Debug-iphonesimulator
+          tar czf "$GITHUB_WORKSPACE/aniverse-ios-simulator.tar.gz" AniVerse.app
+
+      - name: Upload simulator app
+        uses: actions/upload-artifact@v4
+        with:
+          name: aniverse-ios-simulator
+          path: aniverse-ios-simulator.tar.gz
+          if-no-files-found: error
