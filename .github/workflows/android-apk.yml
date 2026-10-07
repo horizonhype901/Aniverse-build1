@@ -33,8 +33,8 @@ jobs:
       - name: Generate native Android project
         run: npx expo prebuild --platform android --non-interactive
 
-      - name: Build debug APK
-        run: cd android && ./gradlew assembleDebug --no-daemon -q
+      - name: Build debug APK (JS bundled for sideloading)
+        run: cd android && ./gradlew assembleDebug --no-daemon -q -PbundleInDebug=true
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
