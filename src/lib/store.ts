@@ -22,6 +22,7 @@ export const K = {
   progress: 'aniverse:progress:v1',     // Record<animeId, ProgressEntry>
   favTopics: 'aniverse:favTopics:v1',   // Topic[]
   manga: 'aniverse:manga:v1',           // MangaEntry[]
+  lastCommentAt: 'aniverse:lastCommentAt:v1', // epoch ms (comment slow mode)
   studioTab: 'aniverse:studioTab:v1',   // string (avatar studio last category)
   openStudio: 'aniverse:openStudio:v1', // 'yes' → open AvatarStudio after onboarding
 };
@@ -131,6 +132,9 @@ export const store = {
   // manga shelf
   manga: () => get<MangaEntry[]>(K.manga, []),
   saveManga: (m: MangaEntry[]) => set(K.manga, m),
+  // comment slow mode
+  lastCommentAt: () => get<number>(K.lastCommentAt, 0),
+  saveLastCommentAt: (t: number) => set(K.lastCommentAt, t),
   // onboarding
   onboarded: () => get<string | null>(K.onboarded, null),
   setOnboarded: () => set(K.onboarded, 'yes'),

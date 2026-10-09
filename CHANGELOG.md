@@ -74,4 +74,19 @@ Each entry cites the research evidence that motivated it.
   `ProfileScreen.tsx`, `AnimeDetailScreen.tsx`. Verified: tsc + expo-doctor
   21/21 green; 4/4 store round-trip checks.
 
+### 🐢 Comment slow mode + 🎉 "You're all caught up" footer (PostDetail + Feed)
+- Comments are rate-limited to one per 30s per device, with a friendly
+  "🐢 Slow mode — take a breath, post again in Xs" notice. Pile-ons and
+  rage-reply threads need velocity; removing it keeps discussion human.
+- The feed now ends with a deliberate stopping cue — "🎉 You're all caught
+  up! No infinite scroll here — go watch some anime." — instead of an endless
+  slot-machine scroll.
+- Evidence: harassment/safety — https://www.medscape.com/viewarticle/negative-online-experiences-common-among-us-adolescents-vary-2026a1000zp5 ;
+  finite "you're caught up" feeds — https://pckt.blog/b/jesseplusplus/people-not-feeds-91g2s7z ;
+  stopping cues over endless refresh —
+  https://discovermagazine.com/mind/escaping-the-doomscroll-how-social-media-could-work-with-us-not-against-us .
+- Touched: `src/lib/kindness.ts` (slowModeWait), `src/lib/store.ts`
+  (lastCommentAt), `PostDetailScreen.tsx`, `FeedScreen.tsx`. Verified: tsc +
+  expo-doctor 21/21 green; 5/5 slow-mode unit checks.
+
 <!-- new entries go below -->

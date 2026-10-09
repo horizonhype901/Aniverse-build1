@@ -47,3 +47,13 @@ export function heatCheck(body: string): HeatResult {
   if (flags.length === 1) return { level: 'warm', flags };
   return { level: 'ok', flags };
 }
+
+// 🐢 Comment slow mode — one comment per SLOW_MODE_SEC seconds per device.
+// Rage-reply threads and pile-ons need velocity; removing it keeps discussion
+// human. Returns seconds remaining to wait (0 = go ahead). Pure — testable.
+export const SLOW_MODE_SEC = 30;
+export function slowModeWait(lastAtMs: number, nowMs: number = Date.now()): number {
+  if (!lastAtMs) return 0;
+  const remain = Math.ceil((SLOW_MODE_SEC * 1000 - (nowMs - lastAtMs)) / 1000);
+  return Math.max(0, remain);
+}

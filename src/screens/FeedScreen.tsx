@@ -236,6 +236,15 @@ export default function FeedScreen() {
         ListEmptyComponent={
           <Text style={s.empty}>No posts here yet — start the conversation! 🎌</Text>
         }
+        ListFooterComponent={
+          sorted.length > 0 ? (
+            <View style={s.caughtUp}>
+              <Text style={s.caughtUpEmoji}>🎉</Text>
+              <Text style={s.caughtUpText}>You're all caught up!</Text>
+              <Text style={s.caughtUpSub}>No infinite scroll here — go watch some anime. 📺</Text>
+            </View>
+          ) : undefined
+        }
       />
 
       <Pressable
@@ -273,6 +282,10 @@ const s = StyleSheet.create({
   chipText: { color: C.muted, fontWeight: '700', fontSize: 13 },
   mutedNote: { color: C.faint, fontSize: 12, textAlign: 'center', marginBottom: 4 },
   empty: { color: C.faint, textAlign: 'center', marginTop: 60, fontSize: 15 },
+  caughtUp: { alignItems: 'center', paddingVertical: 34, paddingHorizontal: 30 },
+  caughtUpEmoji: { fontSize: 40, marginBottom: 8 },
+  caughtUpText: { color: C.text, fontSize: 17, fontWeight: '800' },
+  caughtUpSub: { color: C.faint, fontSize: 13, marginTop: 6, textAlign: 'center' },
   fab: { position: 'absolute', right: 18, bottom: 26, width: 60, height: 60, borderRadius: 30, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', elevation: 6, shadowColor: C.primary, shadowOpacity: 0.5, shadowRadius: 10 },
   fabText: { color: '#fff', fontSize: 30, fontWeight: '300', marginTop: -2 },
 });

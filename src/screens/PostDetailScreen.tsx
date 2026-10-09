@@ -8,6 +8,7 @@ import * as Haptics from 'expo-haptics';
 import { C } from '../theme';
 import { store } from '../lib/store';
 import { Comment, Poll, Post, ProgressEntry } from '../types';
+import { SLOW_MODE_SEC, slowModeWait } from '../lib/kindness';
 import PostCard, { Avatar } from '../components/PostCard';
 import { timeAgo } from '../lib/format';
 
@@ -26,6 +27,8 @@ export default function PostDetailScreen() {
   const [progress, setProgress] = useState<Record<number, ProgressEntry>>({});
   const [draft, setDraft] = useState('');
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
+  const [slowMsg, setSlowMsg] = useState('');
+  const slowTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
     const [posts, all, cl, r, mr, v, pr, pg] = await Promise.all([
@@ -106,6 +109,15 @@ export default function PostDetailScreen() {
 
   const sendComment = async () => {
     if (!draft.trim() || !post) return;
+    // 🐢 slow mode: one comment per device every SLOW_MODE_SEC seconds
+    const wait = slowModeWait(await store.lastCommentAt());
+    if (wait > 0) {
+      if (slowTimer.current) clearTimeout(slowTimer.current);
+      setSlowMsg(`🐢 Slow mode — take a breath, post again in ${wait}s`);
+      slowTimer.current = setTimeout(() => setSlowMsg(''), 2600);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
     const profile = await store.profile();
     const c: Comment = {
       id: `c-${Date.now()}`,
@@ -123,6 +135,7 @@ export default function PostDetailScreen() {
     const list = [c, ...(all[post.id] || [])];
     all[post.id] = list;
     await store.saveComments(all);
+    await store.saveLastCommentAt(Date.now());
     setComments(list.slice().sort((a, b) => b.createdAt - a.createdAt));
     setDraft('');
     setReplyTo(null);
@@ -225,6 +238,7 @@ export default function PostDetailScreen() {
           </Pressable>
         </View>
       )}
+      {slowMsg ? <Text style={s.slowMsg}>{slowMsg}</Text> : null}
       <View style={s.inputRow}>
         <TextInput
           style={s.input}
@@ -266,4 +280,5 @@ const s = StyleSheet.create({
   send: { width: 42, height: 42, borderRadius: 21, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
   sendDim: { opacity: 0.4 },
   sendText: { color: '#fff', fontSize: 18 },
+  slowMsg: { color: C.gold, fontSize: 12, fontWeight: '700', textAlign: 'center', paddingTop: 8, backgroundColor: C.surface },
 });
