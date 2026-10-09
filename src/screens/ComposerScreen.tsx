@@ -19,6 +19,7 @@ export default function ComposerScreen() {
   const [title, setTitle] = useState(prefill.title || '');
   const [body, setBody] = useState('');
   const [animeTag, setAnimeTag] = useState(prefill.animeTag || '');
+  const [credit, setCredit] = useState('');
   const [spoiler, setSpoiler] = useState(false);
   const [pollOn, setPollOn] = useState(false);
   const [pollQ, setPollQ] = useState('');
@@ -56,6 +57,7 @@ export default function ComposerScreen() {
       body: body.trim(),
       spoiler,
       animeTag: animeTag.trim() || undefined,
+      credit: credit.trim() || undefined,
       poll: pollOn
         ? {
             id: `poll-u-${Date.now()}`,
@@ -109,6 +111,18 @@ export default function ComposerScreen() {
         <Text style={s.label}>Anime tag (optional)</Text>
         <TextInput style={s.input} value={animeTag} onChangeText={setAnimeTag}
           placeholder="e.g. Frieren: Beyond Journey's End" placeholderTextColor={C.faint} />
+
+        {topic === 'Art & Cosplay' && (
+          <>
+            <Text style={s.label}>🎨 Artist credit</Text>
+            <TextInput style={s.input} value={credit} onChangeText={setCredit}
+              placeholder="Who made this? (handle or name)" placeholderTextColor={C.faint} />
+            <Text style={s.creditHint}>
+              Always credit the original artist — reposts without credit are
+              the #1 complaint in fan-art communities.
+            </Text>
+          </>
+        )}
 
         <View style={s.row}>
           <Text style={s.rowLabel}>⚠️ Contains spoilers</Text>
@@ -164,6 +178,7 @@ const s = StyleSheet.create({
   multiline: { minHeight: 120 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10 },
   rowLabel: { color: C.text, fontWeight: '600', fontSize: 15 },
+  creditHint: { color: C.faint, fontSize: 12, marginTop: -6, marginBottom: 10, lineHeight: 17 },
   pollBox: { backgroundColor: C.surface, borderRadius: R.md, padding: 10, borderWidth: 1, borderColor: C.border },
   addOpt: { color: C.secondary, fontWeight: '700', padding: 8 },
 });

@@ -16,6 +16,7 @@ export interface Post {
   body: string;
   spoiler: boolean;
   animeTag?: string;
+  credit?: string; // artist credit for Art & Cosplay posts (anti-repost-theft)
   poll?: Poll;
   createdAt: number;
   likes: number;

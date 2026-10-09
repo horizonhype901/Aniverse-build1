@@ -35,4 +35,15 @@ Each entry cites the research evidence that motivated it.
   `FeedScreen.tsx`, `ProfileScreen.tsx`, `src/profile/badges.tsx`. Verified:
   tsc + expo-doctor 21/21 green; 11/11 unit checks on threshold/snooze/streak/rollover logic.
 
+### 🎨 Artist credit on Art & Cosplay posts (Composer + PostCard)
+- Composer shows an "🎨 Artist credit" field when the topic is Art & Cosplay;
+  the credit renders as a "🎨 Art by …" chip on the post and is carried into
+  the share text — a structural nudge against repost-without-credit theft.
+- Evidence: artists report platforms do little to stop reposting; on Instagram/
+  DeviantArt even followers can't report someone else's stolen art —
+  https://scotscoop.com/stealing-art-is-not-limited-to-just-reposting/ ;
+  idea-bank #303-area (fan-art credit).
+- Touched: `src/types.ts` (Post.credit), `ComposerScreen.tsx`, `PostCard.tsx`.
+  Verified: tsc + expo-doctor 21/21 green.
+
 <!-- new entries go below -->

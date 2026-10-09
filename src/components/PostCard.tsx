@@ -143,7 +143,11 @@ export default function PostCard(p: Props) {
 
   const share = async () => {
     try {
-      await Share.share({ message: `${post.title}\n\n${post.body}\n\n— via AniVerse` });
+      await Share.share({
+        message: `${post.title}\n\n${post.body}${
+          post.credit ? `\n\n🎨 Art by ${post.credit}` : ''
+        }\n\n— via AniVerse`,
+      });
     } catch {}
   };
 
@@ -201,6 +205,11 @@ export default function PostCard(p: Props) {
       )}
       {!spoilerHidden && post.animeTag ? (
         <View style={s.animeTag}><Text style={s.animeTagText}>🎌 {post.animeTag}</Text></View>
+      ) : null}
+      {!spoilerHidden && post.credit ? (
+        <View style={[s.animeTag, { marginTop: 6 }]}>
+          <Text style={[s.animeTagText, { color: '#F472B6' }]}>🎨 Art by {post.credit}</Text>
+        </View>
       ) : null}
       {!spoilerHidden && post.poll ? (
         <PollVote
