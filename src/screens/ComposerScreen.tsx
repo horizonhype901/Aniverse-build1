@@ -6,6 +6,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { C, R, TOPIC_COLORS } from '../theme';
 import { TOPICS } from '../data/seed';
 import { store } from '../lib/store';
+import { heatCheck } from '../lib/kindness';
 import { Post, Topic } from '../types';
 
 const AVATAR_COLORS = ['#FF4D6D', '#8B5CF6', '#22D3EE', '#F472B6', '#FFC94D', '#4ADE80', '#FB7185'];
@@ -44,6 +45,23 @@ export default function ComposerScreen() {
         return;
       }
     }
+    // 🌡️ kindness nudge: heated drafts get a speed bump, never a block
+    const heat = heatCheck(`${title}\n${body}`);
+    if (heat.level === 'hot') {
+      Alert.alert(
+        '🌡️ Reads a bit heated',
+        `This post tripped the chill filter (${heat.flags.join('; ')}). AniVerse is a chill zone — want to tone it down, or post as-is?`,
+        [
+          { text: '✏️ Let me edit', style: 'cancel' },
+          { text: 'Post anyway', onPress: () => doSubmit() },
+        ]
+      );
+      return;
+    }
+    doSubmit();
+  };
+
+  const doSubmit = async () => {
     const profile = await store.profile();
     const cleanOpts = pollOpts.map((o) => o.trim()).filter(Boolean);
     const post: Post = {

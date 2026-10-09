@@ -46,4 +46,17 @@ Each entry cites the research evidence that motivated it.
 - Touched: `src/types.ts` (Post.credit), `ComposerScreen.tsx`, `PostCard.tsx`.
   Verified: tsc + expo-doctor 21/21 green.
 
+### 🌡️ Kindness nudge — pre-post toxicity friction (Composer)
+- Drafts that trip the on-device chill filter (hostile words, ALL-CAPS ranting,
+  exclamation spam — 2+ signals) get a "🌡️ Reads a bit heated" confirm dialog
+  with "✏️ Let me edit" / "Post anyway". It never blocks; it's a speed bump.
+  Single-signal drafts post normally. Nothing leaves the phone.
+- Evidence: 44.7% of US teens witnessed online harassment; Instagram worst for
+  negative self-perception —
+  https://www.medscape.com/viewarticle/negative-online-experiences-common-among-us-adolescents-vary-2026a1000zp5 ;
+  seven lines of evidence that platforms fail teen safety —
+  https://www.afterbabel.com/p/the-many-lines-of-evidence-that-social .
+- New: `src/lib/kindness.ts`. Touched: `ComposerScreen.tsx`. Verified: tsc +
+  expo-doctor 21/21 green; 7/7 unit checks on heat levels.
+
 <!-- new entries go below -->
