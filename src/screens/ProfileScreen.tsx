@@ -5,7 +5,7 @@ import {
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { C, R } from '../theme';
 import { store } from '../lib/store';
-import { ListeningStats, Mutes, PodcastShow, Post, Profile, ProgressEntry, WatchEntry, WatchStatus } from '../types';
+import { ListeningStats, MangaEntry, MangaStatus, Mutes, PodcastShow, Post, Profile, ProgressEntry, WatchEntry, WatchStatus } from '../types';
 import { Avatar } from '../components/PostCard';
 import { fmtClock } from '../lib/format';
 import { BannerView } from '../profile/Banner';
@@ -31,6 +31,13 @@ const STATUS_LABEL: Record<WatchStatus, string> = {
   watching: '▶️ Watching', completed: '✅ Completed', plan: '📌 Plan to Watch',
   onhold: '⏸️ On Hold', dropped: '🗑️ Dropped',
 };
+const MANGA_STATUSES: { key: MangaStatus; label: string }[] = [
+  { key: 'reading', label: '📖 Reading' },
+  { key: 'completed', label: '✅ Completed' },
+  { key: 'plan', label: '📌 Plan to Read' },
+  { key: 'onhold', label: '⏸️ On Hold' },
+  { key: 'dropped', label: '🗑️ Dropped' },
+];
 
 const isoDay = (d: Date) => d.toISOString().slice(0, 10);
 function streakDays(days: string[]): number {
@@ -60,6 +67,9 @@ export default function ProfileScreen() {
   const [myComments, setMyComments] = useState(0);
   const [toast, setToast] = useState<{ msg: string; onUndo?: () => void } | null>(null);
   const [screenTime, setScreenTime] = useState<ScreenTime | null>(null);
+  const [manga, setManga] = useState<MangaEntry[]>([]);
+  const [mangaTitle, setMangaTitle] = useState('');
+  const [mangaFilter, setMangaFilter] = useState<MangaStatus | 'all'>('all');
   const toastTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = (msg: string, onUndo?: () => void) => {
@@ -69,10 +79,10 @@ export default function ProfileScreen() {
   };
 
   const load = useCallback(async () => {
-    const [p, w, s, posts, pg, ci, pr, li, mu, cm, st] = await Promise.all([
+    const [p, w, s, posts, pg, ci, pr, li, mu, cm, st, mg] = await Promise.all([
       store.profile(), store.watchlist(), store.subs(), store.posts(),
       store.progress(), store.checkins(), store.predictions(),
-      store.listening(), store.mutes(), store.comments(), loadScreenTime(),
+      store.listening(), store.mutes(), store.comments(), loadScreenTime(), store.manga(),
     ]);
     setProfile(p);
     setWatch(w);
@@ -85,6 +95,7 @@ export default function ProfileScreen() {
     setMutes(mu);
     setMyComments((Object.values(cm).flat() as any[]).filter((c) => c.author === p.username).length);
     setScreenTime(st);
+    setManga(mg);
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -132,6 +143,33 @@ export default function ProfileScreen() {
     setMutes(nm);
     await store.saveMutes(nm);
   };
+
+  // ---- manga shelf ----
+  const persistManga = async (m: MangaEntry[]) => {
+    setManga(m);
+    await store.saveManga(m);
+  };
+  const addManga = async () => {
+    const t = mangaTitle.trim();
+    if (!t) return;
+    await persistManga([
+      { id: `m-${Date.now()}`, title: t, status: 'reading', chapter: 0, addedAt: Date.now() },
+      ...manga,
+    ]);
+    setMangaTitle('');
+  };
+  const bumpChapter = async (id: string, d: number) => {
+    await persistManga(
+      manga.map((m) => (m.id === id ? { ...m, chapter: Math.max(0, m.chapter + d) } : m))
+    );
+  };
+  const setMangaStatus = async (id: string, status: MangaStatus) => {
+    await persistManga(manga.map((m) => (m.id === id ? { ...m, status } : m)));
+  };
+  const removeManga = async (id: string) => {
+    await persistManga(manga.filter((m) => m.id !== id));
+  };
+  const shownManga = manga.filter((m) => mangaFilter === 'all' || m.status === mangaFilter);
 
   const shown = watch.filter((x) => filter === 'all' || x.status === filter);
 
@@ -318,6 +356,45 @@ export default function ProfileScreen() {
           </Pressable>
         ))}
 
+        <Text style={s.secTitle}>📚 Manga Shelf</Text>
+        <View style={s.card}>
+          <View style={s.muteRow}>
+            <TextInput style={[s.edit, { flex: 1 }]} value={mangaTitle} onChangeText={setMangaTitle}
+              placeholder="Add a manga (e.g. Berserk)" placeholderTextColor={C.faint}
+              onSubmitEditing={addManga} />
+            <Pressable style={s.muteAdd} onPress={addManga}><Text style={s.muteAddText}>＋</Text></Pressable>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
+            {[{ key: 'all', label: 'All' }, ...MANGA_STATUSES].map((f) => (
+              <Pressable key={f.key} onPress={() => setMangaFilter(f.key as MangaStatus | 'all')}
+                style={[s.fchip, mangaFilter === f.key && s.fchipActive]}>
+                <Text style={[s.fchipText, mangaFilter === f.key && { color: '#fff' }]}>{f.label}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+          {shownManga.length === 0 ? (
+            <Text style={s.empty}>No manga here — track what you're reading, chapter by chapter.</Text>
+          ) : shownManga.map((m) => (
+            <View key={m.id} style={s.mangaRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={s.rowTitle} numberOfLines={1}>{m.title}</Text>
+                <Text style={s.rowSub}>
+                  {MANGA_STATUSES.find((x) => x.key === m.status)?.label}
+                  {m.fromAnime ? ` · 📖 from ${m.fromAnime.title}` : ''}
+                </Text>
+              </View>
+              <Pressable style={s.stepBtn} onPress={() => bumpChapter(m.id, -1)}>
+                <Text style={s.stepText}>−</Text>
+              </Pressable>
+              <Text style={s.chCount}>ch {m.chapter}</Text>
+              <Pressable style={s.stepBtn} onPress={() => bumpChapter(m.id, 1)}>
+                <Text style={s.stepText}>＋</Text>
+              </Pressable>
+              <Pressable onPress={() => removeManga(m.id)}><Text style={s.remove}>✕</Text></Pressable>
+            </View>
+          ))}
+        </View>
+
         <Text style={s.secTitle}>🙈 Muted words & anime</Text>
         <View style={s.card}>
           <View style={s.muteRow}>
@@ -493,6 +570,10 @@ const s = StyleSheet.create({
   nchipActive: { backgroundColor: C.green, borderColor: C.green },
   nchipText: { color: C.muted, fontWeight: '700', fontSize: 13 },
   muteRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  mangaRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderTopWidth: 1, borderTopColor: C.border },
+  stepBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: C.card2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.border },
+  stepText: { color: C.text, fontSize: 16, fontWeight: '800' },
+  chCount: { color: C.accent, fontWeight: '800', fontSize: 13, marginHorizontal: 8, minWidth: 44, textAlign: 'center' },
   muteAdd: { width: 38, height: 38, borderRadius: 19, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
   muteAddText: { color: '#fff', fontSize: 20, fontWeight: '700' },
   muteChips: { flexDirection: 'row', flexWrap: 'wrap' },

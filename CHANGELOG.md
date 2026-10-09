@@ -59,4 +59,19 @@ Each entry cites the research evidence that motivated it.
 - New: `src/lib/kindness.ts`. Touched: `ComposerScreen.tsx`. Verified: tsc +
   expo-doctor 21/21 green; 7/7 unit checks on heat levels.
 
+### 📚 Manga Shelf + anime→manga chapter bridge (Profile + AnimeDetail)
+- New "📚 Manga Shelf" section on Profile: add manga titles, chapter −/+ steppers,
+  status filters (Reading / Completed / Plan / On Hold / Dropped), remove —
+  all persisted on-device.
+- On any anime's detail page, a "📖 Continue in the manga" card lets you link
+  the manga title + the chapter the anime leaves off at; the linked entry shows
+  on the shelf ("📖 from {anime}") and on the anime page with a ＋ stepper.
+- Evidence: tracking is fragmented across apps and "continue anime from manga
+  chapter X" has no single home; 7,000+ titles were DMCA'd off MangaDex —
+  https://myanimelist.net/forum/?topicid=2214700&show=50 ;
+  idea-bank #115/#621–630.
+- Touched: `src/types.ts` (MangaEntry), `src/lib/store.ts` (manga/mangaShelf keys),
+  `ProfileScreen.tsx`, `AnimeDetailScreen.tsx`. Verified: tsc + expo-doctor
+  21/21 green; 4/4 store round-trip checks.
+
 <!-- new entries go below -->

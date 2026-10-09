@@ -70,6 +70,17 @@ export interface Episode {
 export type WatchStatus = 'watching' | 'completed' | 'plan' | 'dropped' | 'onhold';
 export interface WatchEntry { anime: AnimeItem; status: WatchStatus; addedAt: number; note?: string; }
 
+export type MangaStatus = 'reading' | 'completed' | 'plan' | 'onhold' | 'dropped';
+export interface MangaEntry {
+  id: string;
+  title: string;
+  status: MangaStatus;
+  chapter: number;
+  totalChapters?: number;
+  fromAnime?: { id: number; title: string } | null; // anime→manga chapter bridge
+  addedAt: number;
+}
+
 export interface ProgressEntry { title: string; watched: number; total?: number; hideSpoilers: boolean; }
 
 export interface ListeningStats { episodesCompleted: number; secondsListened: number; completedIds: string[]; }

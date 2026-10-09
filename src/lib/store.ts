@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Comment, ListeningStats, Mutes, Post, Profile, ProgressEntry, Topic, WatchEntry } from '../types';
+import { Comment, ListeningStats, MangaEntry, Mutes, Post, Profile, ProgressEntry, Topic, WatchEntry } from '../types';
 import { SEED_COMMENTS, SEED_POSTS, SEED_REACTIONS } from '../data/seed';
 
 export const K = {
@@ -21,6 +21,7 @@ export const K = {
   onboarded: 'aniverse:onboarded:v1',
   progress: 'aniverse:progress:v1',     // Record<animeId, ProgressEntry>
   favTopics: 'aniverse:favTopics:v1',   // Topic[]
+  manga: 'aniverse:manga:v1',           // MangaEntry[]
   studioTab: 'aniverse:studioTab:v1',   // string (avatar studio last category)
   openStudio: 'aniverse:openStudio:v1', // 'yes' → open AvatarStudio after onboarding
 };
@@ -127,6 +128,9 @@ export const store = {
   // per-anime watch progress
   progress: () => get<Record<number, ProgressEntry>>(K.progress, {}),
   saveProgress: (p: Record<number, ProgressEntry>) => set(K.progress, p),
+  // manga shelf
+  manga: () => get<MangaEntry[]>(K.manga, []),
+  saveManga: (m: MangaEntry[]) => set(K.manga, m),
   // onboarding
   onboarded: () => get<string | null>(K.onboarded, null),
   setOnboarded: () => set(K.onboarded, 'yes'),

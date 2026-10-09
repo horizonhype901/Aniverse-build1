@@ -7,7 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { C, R } from '../theme';
 import { animeFull } from '../lib/api';
 import { store } from '../lib/store';
-import { AnimeItem, ProgressEntry, WatchStatus } from '../types';
+import { AnimeItem, MangaEntry, ProgressEntry, WatchStatus } from '../types';
 import { compact } from '../lib/format';
 
 const STATUSES: { key: WatchStatus; label: string }[] = [
@@ -31,6 +31,9 @@ export default function AnimeDetailScreen() {
   const [note, setNote] = useState('');
   const [progress, setProgress] = useState<ProgressEntry | null>(null);
   const [pace, setPace] = useState(0); // episodes per active day, learned
+  const [linkedManga, setLinkedManga] = useState<MangaEntry | null>(null);
+  const [mangaTitle, setMangaTitle] = useState('');
+  const [mangaChapter, setMangaChapter] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -51,9 +54,32 @@ export default function AnimeDetailScreen() {
         const days = await store.checkins();
         const totalEps = Object.values(pg).reduce((a, e: any) => a + (e.watched || 0), 0);
         setPace(days.length > 0 && totalEps > 0 ? totalEps / days.length : 0);
+        // manga bridge: is this anime continued in the manga shelf?
+        const mg = await store.manga();
+        setLinkedManga(mg.find((m) => m.fromAnime?.id === animeId) || null);
       }
     })();
   }, [animeId]);
+
+  const linkManga = async () => {
+    if (!anime || !animeId) return;
+    const title = mangaTitle.trim() || anime.title;
+    const ch = Math.max(0, parseInt(mangaChapter.replace(/\D/g, ''), 10) || 0);
+    const mg = await store.manga();
+    const entry: MangaEntry = {
+      id: `m-${Date.now()}`,
+      title,
+      status: 'reading',
+      chapter: ch,
+      fromAnime: { id: animeId, title: anime.title },
+      addedAt: Date.now(),
+    };
+    await store.saveManga([entry, ...mg]);
+    setLinkedManga(entry);
+    setMangaTitle('');
+    setMangaChapter('');
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
 
   const setWatch = async (s: WatchStatus | null, n?: string) => {
     if (!anime) return;
@@ -187,6 +213,59 @@ export default function AnimeDetailScreen() {
             )}
           </View>
 
+          {/* 📖 anime → manga chapter bridge */}
+          <View style={s.card}>
+            <Text style={s.cardTitle}>📖 Continue in the manga</Text>
+            {linkedManga ? (
+              <View style={s.bridgeRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.bridgeTitle} numberOfLines={1}>{linkedManga.title}</Text>
+                  <Text style={s.bridgeSub}>ch {linkedManga.chapter} · on your Manga Shelf</Text>
+                </View>
+                <Pressable
+                  style={s.stepBtn}
+                  onPress={async () => {
+                    const mg = await store.manga();
+                    const next = mg.map((m) =>
+                      m.id === linkedManga.id ? { ...m, chapter: m.chapter + 1 } : m
+                    );
+                    await store.saveManga(next);
+                    setLinkedManga({ ...linkedManga, chapter: linkedManga.chapter + 1 });
+                  }}
+                >
+                  <Text style={s.stepText}>＋</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <>
+                <Text style={s.bridgeHint}>
+                  Know which chapter this anime leaves off at? Link it — your
+                  shelf tracks chapters from there.
+                </Text>
+                <TextInput
+                  style={s.noteInput}
+                  value={mangaTitle}
+                  onChangeText={setMangaTitle}
+                  placeholder={`Manga title (default: ${anime?.title || 'this anime'})`}
+                  placeholderTextColor={C.faint}
+                />
+                <View style={s.bridgeForm}>
+                  <TextInput
+                    style={[s.noteInput, { flex: 1, marginRight: 8 }]}
+                    value={mangaChapter}
+                    onChangeText={setMangaChapter}
+                    placeholder="Starts at chapter…"
+                    placeholderTextColor={C.faint}
+                    keyboardType="numeric"
+                  />
+                  <Pressable style={s.addBtn} onPress={linkManga}>
+                    <Text style={s.addText}>🔗 Link</Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
+          </View>
+
           <View style={s.actions}>
             {status === null ? (
               <Pressable style={s.addBtn} onPress={() => setWatch('watching')}>
@@ -249,6 +328,11 @@ const s = StyleSheet.create({
   synopsis: { color: C.muted, fontSize: 14, lineHeight: 22, paddingHorizontal: 16 },
   card: { backgroundColor: C.card, borderRadius: R.lg, margin: 16, marginBottom: 0, padding: 14, borderWidth: 1, borderColor: C.border },
   cardTitle: { color: C.text, fontWeight: '800', fontSize: 15, marginBottom: 10 },
+  bridgeRow: { flexDirection: 'row', alignItems: 'center' },
+  bridgeTitle: { color: C.text, fontWeight: '700', fontSize: 14 },
+  bridgeSub: { color: C.accent, fontSize: 12, marginTop: 3, fontWeight: '600' },
+  bridgeHint: { color: C.faint, fontSize: 12, lineHeight: 17, marginBottom: 10 },
+  bridgeForm: { flexDirection: 'row', alignItems: 'center' },
   stepRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   stepBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.card2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.border },
   stepText: { color: C.text, fontSize: 22, fontWeight: '700' },
