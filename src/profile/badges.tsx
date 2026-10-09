@@ -15,6 +15,7 @@ export interface BadgeStats {
   checkinDays: number;
   showcaseCount: number;
   hasAnthem: boolean;
+  breakStreak: number;
 }
 
 export function computeBadges(s: BadgeStats): Badge[] {
@@ -29,6 +30,7 @@ export function computeBadges(s: BadgeStats): Badge[] {
   if (s.posts >= 10) b.push({ id: 'poster', emoji: '✍️', name: 'Poster', desc: '10 posts published' });
   if (s.showcaseCount >= 3) b.push({ id: 'curator', emoji: '⭐', name: 'Curator', desc: 'Showcased 3 favorites' });
   if (s.hasAnthem) b.push({ id: 'anthem', emoji: '🎵', name: 'Anthem Set', desc: 'Set a profile anthem' });
+  if (s.breakStreak >= 3) b.push({ id: 'touchgrass', emoji: '🌱', name: 'Touch Grass', desc: 'Took a screen-time break 3 days in a row' });
   return b;
 }
 
@@ -42,6 +44,7 @@ const ALL: Badge[] = [
   { id: 'poster', emoji: '✍️', name: 'Poster', desc: '10 posts published' },
   { id: 'curator', emoji: '⭐', name: 'Curator', desc: 'Showcased 3 favorites' },
   { id: 'anthem', emoji: '🎵', name: 'Anthem Set', desc: 'Set a profile anthem' },
+  { id: 'touchgrass', emoji: '🌱', name: 'Touch Grass', desc: 'Took a screen-time break 3 days in a row' },
 ];
 
 /** Deterministic badges for community members. */

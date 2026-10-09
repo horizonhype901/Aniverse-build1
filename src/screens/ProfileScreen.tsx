@@ -14,6 +14,9 @@ import { FALLBACK_ANIME } from '../data/seed';
 import { THEMES } from '../profile/options';
 import Heatmap from '../components/Heatmap';
 import { BadgesRow, computeBadges } from '../profile/badges';
+import {
+  NUDGE_OPTIONS, ScreenTime, loadScreenTime, nudgeLabel, setNudgeThreshold,
+} from '../lib/screentime';
 
 const FILTERS: { key: WatchStatus | 'all'; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -56,6 +59,7 @@ export default function ProfileScreen() {
   const [filter, setFilter] = useState<WatchStatus | 'all'>('all');
   const [myComments, setMyComments] = useState(0);
   const [toast, setToast] = useState<{ msg: string; onUndo?: () => void } | null>(null);
+  const [screenTime, setScreenTime] = useState<ScreenTime | null>(null);
   const toastTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = (msg: string, onUndo?: () => void) => {
@@ -65,10 +69,10 @@ export default function ProfileScreen() {
   };
 
   const load = useCallback(async () => {
-    const [p, w, s, posts, pg, ci, pr, li, mu, cm] = await Promise.all([
+    const [p, w, s, posts, pg, ci, pr, li, mu, cm, st] = await Promise.all([
       store.profile(), store.watchlist(), store.subs(), store.posts(),
       store.progress(), store.checkins(), store.predictions(),
-      store.listening(), store.mutes(), store.comments(),
+      store.listening(), store.mutes(), store.comments(), loadScreenTime(),
     ]);
     setProfile(p);
     setWatch(w);
@@ -80,6 +84,7 @@ export default function ProfileScreen() {
     setListening(li);
     setMutes(mu);
     setMyComments((Object.values(cm).flat() as any[]).filter((c) => c.author === p.username).length);
+    setScreenTime(st);
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -158,6 +163,7 @@ export default function ProfileScreen() {
     checkinDays: checkins.length,
     showcaseCount: showcaseAnime.length,
     hasAnthem: !!profile.anthem,
+    breakStreak: screenTime?.breakStreak ?? 0,
   });
   const nowWatching = watch.filter((x) => x.status === 'watching').slice(0, 8);
 
@@ -281,6 +287,8 @@ export default function ProfileScreen() {
           <View style={s.statCard}><Text style={s.statBig}>🔮 {predRight}/{predEntries.length}</Text><Text style={s.statLbl}>predictions right</Text></View>
           <View style={s.statCard}><Text style={s.statBig}>🎙️ {listening.episodesCompleted}</Text><Text style={s.statLbl}>podcast eps done</Text></View>
           <View style={s.statCard}><Text style={s.statBig}>🎧 {fmtClock(listening.secondsListened)}</Text><Text style={s.statLbl}>listened</Text></View>
+          <View style={s.statCard}><Text style={s.statBig}>🌱 {screenTime?.breaksTaken ?? 0}</Text><Text style={s.statLbl}>breaks today</Text></View>
+          <View style={s.statCard}><Text style={s.statBig}>🌿 {screenTime?.breakStreak ?? 0}d</Text><Text style={s.statLbl}>touch-grass streak</Text></View>
         </View>
         {topGenres.length > 0 && (
           <Text style={s.genreLine}>Your DNA: {topGenres.join(' • ')}</Text>
@@ -338,6 +346,31 @@ export default function ProfileScreen() {
             {mutes.words.length === 0 && mutes.anime.length === 0 && (
               <Text style={s.empty}>Nothing muted — the feed shows everything.</Text>
             )}
+          </View>
+        </View>
+
+        <Text style={s.secTitle}>⏳ Screen-time nudge</Text>
+        <View style={s.card}>
+          <Text style={s.nudgeDesc}>
+            After this much feed time in a day, AniVerse gently suggests a
+            break — instead of another row of content. 🔒 The timer never
+            leaves your phone.
+          </Text>
+          <View style={s.nudgeChips}>
+            {NUDGE_OPTIONS.map((m) => {
+              const active = (screenTime?.thresholdMin ?? 30) === m;
+              return (
+                <Pressable
+                  key={m}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Screen-time nudge ${nudgeLabel(m)}`}
+                  onPress={async () => setScreenTime(await setNudgeThreshold(m))}
+                  style={[s.nchip, active && s.nchipActive]}
+                >
+                  <Text style={[s.nchipText, active && { color: '#fff' }]}>{nudgeLabel(m)}</Text>
+                </Pressable>
+              );
+            })}
           </View>
         </View>
 
@@ -454,6 +487,11 @@ const s = StyleSheet.create({
   rowSub: { color: C.faint, fontSize: 12, marginTop: 3 },
   remove: { color: C.faint, fontSize: 16, padding: 6 },
   chev: { color: C.faint, fontSize: 22 },
+  nudgeDesc: { color: C.muted, fontSize: 13, lineHeight: 19, marginBottom: 10 },
+  nudgeChips: { flexDirection: 'row', flexWrap: 'wrap' },
+  nchip: { borderWidth: 1, borderColor: C.border, backgroundColor: C.card2, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8, marginBottom: 8 },
+  nchipActive: { backgroundColor: C.green, borderColor: C.green },
+  nchipText: { color: C.muted, fontWeight: '700', fontSize: 13 },
   muteRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   muteAdd: { width: 38, height: 38, borderRadius: 19, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
   muteAddText: { color: '#fff', fontSize: 20, fontWeight: '700' },

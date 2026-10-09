@@ -9,6 +9,10 @@ import { TOPICS } from '../data/seed';
 import { ensureSeeded, store } from '../lib/store';
 import { Mutes, Poll, Post, ProgressEntry, Topic } from '../types';
 import PostCard from '../components/PostCard';
+import BreakNudge from '../components/BreakNudge';
+import {
+  addFeedSeconds, loadScreenTime, recordBreak, recordNudgeShown, shouldNudge,
+} from '../lib/screentime';
 
 function hotScore(p: Post): number {
   const hours = (Date.now() - p.createdAt) / 3600000;
@@ -29,6 +33,8 @@ export default function FeedScreen() {
   const [topic, setTopic] = useState<'All' | Topic>('All');
   const [sort, setSort] = useState<'hot' | 'new'>('hot');
   const [refreshing, setRefreshing] = useState(false);
+  const [nudgeOpen, setNudgeOpen] = useState(false);
+  const [nudgeMin, setNudgeMin] = useState(30);
 
   const load = useCallback(async () => {
     await ensureSeeded();
@@ -49,6 +55,29 @@ export default function FeedScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  // 🌱 screen-time tracking: accumulate focused feed seconds; nudge at threshold
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      loadScreenTime().then((st) => {
+        if (alive) setNudgeMin(st.thresholdMin);
+      });
+      const id = setInterval(async () => {
+        const st = await addFeedSeconds(5);
+        if (!alive) return;
+        if (shouldNudge(st)) {
+          await recordNudgeShown();
+          setNudgeMin(st.thresholdMin);
+          setNudgeOpen(true);
+        }
+      }, 5000);
+      return () => {
+        alive = false;
+        clearInterval(id);
+      };
+    }, [])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -218,6 +247,17 @@ export default function FeedScreen() {
       >
         <Text style={s.fabText}>＋</Text>
       </Pressable>
+
+      <BreakNudge
+        visible={nudgeOpen}
+        minutes={nudgeMin}
+        onKeepScrolling={async () => {
+          await recordNudgeShown();
+          setNudgeOpen(false);
+        }}
+        onTakeBreak={() => recordBreak()}
+        onDismiss={() => setNudgeOpen(false)}
+      />
     </View>
   );
 }

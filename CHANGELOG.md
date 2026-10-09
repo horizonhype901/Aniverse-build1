@@ -17,4 +17,22 @@ On-device mega-batch from the 500-idea profile bank:
 
 Each entry cites the research evidence that motivated it.
 
+### 🌱 Take-a-Break doomscroll guard (Feed + Profile)
+- Tracks focused Feed time per day, fully on-device (AsyncStorage; no server, no analytics).
+- Crossing your threshold (Off/15/30/45/60m, set in Profile → "⏳ Screen-time nudge")
+  shows a gentle 🌱 interstitial instead of more content: "Keep scrolling"
+  (snoozes 10 min) or "✨ Take a break" (logs a break, shows a calm rest screen).
+- Profile stats show "breaks today" + "touch-grass streak"; 3-day streak earns the
+  🌱 Touch Grass badge.
+- Evidence: 88% of young people doomscroll, half lose 1+ hr of sleep nightly —
+  https://www.morningstar.com/news/pr-newswire/20260917dc49262/new-poll-finds-88-of-young-people-doomscroll-and-half-lose-more-than-an-hour-of-sleep-a-night ;
+  endless feeds create an "engagement trap" users can't exit —
+  https://medicalxpress.com/news/2026-10-endless-video-users-adhd-struggling.html ;
+  "automatic browsers" regret meaningless scrolling —
+  https://discovermagazine.com/mind/escaping-the-doomscroll-how-social-media-could-work-with-us-not-against-us ;
+  idea-bank #837/#838.
+- New: `src/lib/screentime.ts`, `src/components/BreakNudge.tsx`. Touched:
+  `FeedScreen.tsx`, `ProfileScreen.tsx`, `src/profile/badges.tsx`. Verified:
+  tsc + expo-doctor 21/21 green; 11/11 unit checks on threshold/snooze/streak/rollover logic.
+
 <!-- new entries go below -->
