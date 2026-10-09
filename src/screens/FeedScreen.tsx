@@ -204,6 +204,11 @@ export default function FeedScreen() {
           🙈 {mutedCount} {mutedCount === 1 ? 'post' : 'posts'} hidden by your mute filters
         </Text>
       )}
+      <Text style={s.sortNote}>
+        {sort === 'hot'
+          ? '🔥 Hot = ranked by likes & recency — no black-box algorithm'
+          : '🆕 New = purely chronological, newest first'}
+      </Text>
 
       <FlatList
         data={sorted}
@@ -281,6 +286,7 @@ const s = StyleSheet.create({
   chip: { borderWidth: 1, borderColor: C.border, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8, backgroundColor: C.card, alignSelf: 'center' },
   chipText: { color: C.muted, fontWeight: '700', fontSize: 13 },
   mutedNote: { color: C.faint, fontSize: 12, textAlign: 'center', marginBottom: 4 },
+  sortNote: { color: C.faint, fontSize: 11, textAlign: 'center', marginBottom: 6, opacity: 0.8 },
   empty: { color: C.faint, textAlign: 'center', marginTop: 60, fontSize: 15 },
   caughtUp: { alignItems: 'center', paddingVertical: 34, paddingHorizontal: 30 },
   caughtUpEmoji: { fontSize: 40, marginBottom: 8 },

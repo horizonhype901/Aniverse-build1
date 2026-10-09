@@ -89,4 +89,14 @@ Each entry cites the research evidence that motivated it.
   (lastCommentAt), `PostDetailScreen.tsx`, `FeedScreen.tsx`. Verified: tsc +
   expo-doctor 21/21 green; 5/5 slow-mode unit checks.
 
+### 🔍 Feed transparency line + backend backlog seeded
+- The feed now states exactly how it's sorted under the header ("🔥 Hot =
+  ranked by likes & recency — no black-box algorithm" / "🆕 New = purely
+  chronological") — a direct answer to algorithmic-feed distrust:
+  https://gizmodo.com/instagram-exec-thinks-people-dont-actually-want-a-chronological-feed-2000809867
+- `BACKEND-BACKLOG.md` seeded with the two top backend-gated ideas from this
+  sprint's research (watch-party scheduler + offline con mode), each with its
+  evidence link and marked stub point.
+- Verified: tsc + expo-doctor 21/21 green.
+
 <!-- new entries go below -->
