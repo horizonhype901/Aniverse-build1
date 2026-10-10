@@ -124,3 +124,12 @@ export async function setNudgeThreshold(min: number): Promise<ScreenTime> {
 
 export const NUDGE_OPTIONS = [0, 15, 30, 45, 60];
 export const nudgeLabel = (m: number) => (m === 0 ? 'Off' : `${m}m`);
+
+/** Compact "⏱️ 12m" / "⏱️ 1h 5m" label for the continuous session-time pill. */
+export function formatFeedTime(totalSeconds: number): string {
+  const m = Math.floor(Math.max(0, totalSeconds) / 60);
+  if (m < 60) return `⏱️ ${m}m`;
+  const h = Math.floor(m / 60);
+  const rest = m % 60;
+  return rest === 0 ? `⏱️ ${h}h` : `⏱️ ${h}h ${rest}m`;
+}

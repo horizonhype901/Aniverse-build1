@@ -11,7 +11,7 @@ import { Mutes, Poll, Post, ProgressEntry, Topic } from '../types';
 import PostCard from '../components/PostCard';
 import BreakNudge from '../components/BreakNudge';
 import {
-  addFeedSeconds, loadScreenTime, recordBreak, recordNudgeShown, shouldNudge,
+  addFeedSeconds, formatFeedTime, loadScreenTime, recordBreak, recordNudgeShown, shouldNudge,
 } from '../lib/screentime';
 
 function hotScore(p: Post): number {
@@ -36,6 +36,7 @@ export default function FeedScreen() {
   const [nudgeOpen, setNudgeOpen] = useState(false);
   const [nudgeMin, setNudgeMin] = useState(30);
   const [animeOnly, setAnimeOnly] = useState(false); // 📺 anime-only lanes
+  const [feedTime, setFeedTime] = useState('⏱️ 0m'); // ⏱️ continuous session-time pill
 
   const load = useCallback(async () => {
     await ensureSeeded();
@@ -64,11 +65,15 @@ export default function FeedScreen() {
     useCallback(() => {
       let alive = true;
       loadScreenTime().then((st) => {
-        if (alive) setNudgeMin(st.thresholdMin);
+        if (alive) {
+          setNudgeMin(st.thresholdMin);
+          setFeedTime(formatFeedTime(st.feedSeconds));
+        }
       });
       const id = setInterval(async () => {
         const st = await addFeedSeconds(5);
         if (!alive) return;
+        setFeedTime(formatFeedTime(st.feedSeconds)); // ⏱️ live session-time pill
         if (shouldNudge(st)) {
           await recordNudgeShown();
           setNudgeMin(st.thresholdMin);
@@ -191,12 +196,20 @@ export default function FeedScreen() {
     <View style={s.root}>
       <View style={s.header}>
         <Text style={s.logo}>Ani<Text style={{ color: C.secondary }}>Verse</Text></Text>
-        <Pressable
-          style={s.sortBtn}
-          onPress={() => setSort(sort === 'hot' ? 'new' : 'hot')}
-        >
-          <Text style={s.sortText}>{sort === 'hot' ? '🔥 Hot' : '🆕 New'}</Text>
-        </Pressable>
+        <View style={s.headerRight}>
+          <Text
+            style={s.timePill}
+            accessibilityLabel={`Time spent in feed today: ${feedTime.replace('⏱️ ', '')}`}
+          >
+            {feedTime}
+          </Text>
+          <Pressable
+            style={s.sortBtn}
+            onPress={() => setSort(sort === 'hot' ? 'new' : 'hot')}
+          >
+            <Text style={s.sortText}>{sort === 'hot' ? '🔥 Hot' : '🆕 New'}</Text>
+          </Pressable>
+        </View>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.chips} contentContainerStyle={{ paddingHorizontal: 12 }}>
@@ -310,9 +323,11 @@ export default function FeedScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 54, paddingBottom: 8 },
+  headerRight: { flexDirection: 'row', alignItems: 'center' },
   logo: { color: C.primary, fontSize: 26, fontWeight: '900', letterSpacing: 0.5 },
   sortBtn: { backgroundColor: C.card, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: C.border },
   sortText: { color: C.text, fontWeight: '700' },
+  timePill: { color: C.muted, fontSize: 13, fontWeight: '600', marginRight: 10, fontVariant: ['tabular-nums'] },
   chips: { maxHeight: 46, marginBottom: 4 },
   chip: { borderWidth: 1, borderColor: C.border, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8, backgroundColor: C.card, alignSelf: 'center' },
   chipText: { color: C.muted, fontWeight: '700', fontSize: 13 },

@@ -101,6 +101,21 @@ Each entry cites the research evidence that motivated it.
 
 <!-- new entries go below -->
 
+### ⏱️ Continuous session-time display in the feed header
+- The feed header now shows a live "⏱️ 12m" pill — your focused feed time
+  today, ticking up every few seconds from the on-device screen-time tracker.
+  TU Graz (Oct 2026) found users explicitly asked for continuous visual time
+  displays to escape the "engagement trap"; this is the always-on companion
+  to the Take-a-Break nudge (which still fires at your threshold).
+- Tapping nothing — it's ambient information, not another control to manage;
+  the threshold setting stays in Profile → "⏳ Screen-time nudge".
+- Evidence: users can't voluntarily exit endless feeds and asked for
+  continuous time displays —
+  https://medicalxpress.com/news/2026-10-endless-video-users-adhd-struggling.html
+- Touched: `src/lib/screentime.ts` (formatFeedTime), `src/screens/FeedScreen.tsx`
+  (live pill in header, updates from the existing 5s tracking interval).
+  Verified: tsc + expo-doctor 21/21 green; 8/8 formatFeedTime unit checks.
+
 ### 📝 Episode notes on anime detail pages (unified per-title hub, part 1)
 - Each anime page now has a "📝 My notes" card: add timestamped notes with an
   optional episode reference ("Ep 12"), list and delete — all on-device.
