@@ -101,6 +101,21 @@ Each entry cites the research evidence that motivated it.
 
 <!-- new entries go below -->
 
+### 🙈 One-tap spoiler shield (PostCard + Feed + PostDetail)
+- Spoiler-blurred posts now carry a "🙈 Hide all spoilers for {anime}" button —
+  one tap enables that anime's spoiler shield without leaving the feed/thread.
+  Works even for anime you haven't started tracking (title-keyed progress
+  entries); existing per-anime progress merges by title.
+- Evidence: anime-only fans' spoiler-survival guides warn to avoid feeds and
+  even DMs, relying on heavily-moderated Discords —
+  https://myanimelist.net/forum/?topicid=1911903 ; manga readers spoil/harp
+  on anime-onlys even for 1:1 adaptations —
+  https://myanimelist.net/forum/?topicid=2003025&show=50&msgid=66376630
+- Touched: `src/components/PostCard.tsx` (onShieldAnime prop + button),
+  `src/screens/FeedScreen.tsx`, `src/screens/PostDetailScreen.tsx`,
+  `src/lib/store.ts` (progress map now string-keyed; numeric MAL ids still
+  work). Verified: tsc + expo-doctor 21/21 green.
+
 ### 🎯 For You — on-device taste-match recommender (Discover)
 - New row scores the catalog against YOUR watchlist by genre overlap
   (watching/completed full weight, plan/on-hold half, dropped = no signal),

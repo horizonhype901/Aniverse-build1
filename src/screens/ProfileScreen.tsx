@@ -67,6 +67,7 @@ export default function ProfileScreen() {
   const [myComments, setMyComments] = useState(0);
   const [toast, setToast] = useState<{ msg: string; onUndo?: () => void } | null>(null);
   const [screenTime, setScreenTime] = useState<ScreenTime | null>(null);
+  const [reach, setReach] = useState({ likes: 0, comments: 0, reacts: 0 });
   const [manga, setManga] = useState<MangaEntry[]>([]);
   const [mangaTitle, setMangaTitle] = useState('');
   const [mangaFilter, setMangaFilter] = useState<MangaStatus | 'all'>('all');
@@ -79,10 +80,11 @@ export default function ProfileScreen() {
   };
 
   const load = useCallback(async () => {
-    const [p, w, s, posts, pg, ci, pr, li, mu, cm, st, mg] = await Promise.all([
+    const [p, w, s, posts, pg, ci, pr, li, mu, cm, st, mg, rx] = await Promise.all([
       store.profile(), store.watchlist(), store.subs(), store.posts(),
       store.progress(), store.checkins(), store.predictions(),
       store.listening(), store.mutes(), store.comments(), loadScreenTime(), store.manga(),
+      store.reactions(),
     ]);
     setProfile(p);
     setWatch(w);
@@ -96,6 +98,16 @@ export default function ProfileScreen() {
     setMyComments((Object.values(cm).flat() as any[]).filter((c) => c.author === p.username).length);
     setScreenTime(st);
     setManga(mg);
+    // 📣 reach: honest per-post engagement totals, computed on-device
+    const mine = posts.filter((x) => x.author === p.username);
+    const myIds = new Set(mine.map((x) => x.id));
+    const likes = mine.reduce((a, x) => a + x.likes, 0);
+    const comments = (Object.values(cm).flat() as any[]).filter((c) => myIds.has(c.postId)).length;
+    const reacts = mine.reduce(
+      (a, x) => a + Object.values(rx[x.id] || {}).reduce((s, n) => s + (n as number), 0),
+      0
+    );
+    setReach({ likes, comments, reacts });
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -332,6 +344,28 @@ export default function ProfileScreen() {
           <Text style={s.genreLine}>Your DNA: {topGenres.join(' • ')}</Text>
         )}
 
+        {/* 📣 Your Reach — plain-language, no-shadowban transparency */}
+        <Text style={s.secTitle}>📣 Your Reach</Text>
+        <View style={s.reachCard}>
+          <View style={s.reachRow}>
+            {[
+              [reach.likes, 'likes'],
+              [reach.reacts, 'reactions'],
+              [reach.comments, 'replies'],
+            ].map(([n, label]) => (
+              <View key={label as string} style={s.reachStat}>
+                <Text style={s.reachN}>{n}</Text>
+                <Text style={s.reachL}>{label}</Text>
+              </View>
+            ))}
+          </View>
+          <Text style={s.reachNote}>
+            ✅ Never downranked, never shadowbanned. AniVerse has no algorithm —
+            every post reaches everyone browsing New and Hot. This is the whole
+            picture — nothing is hidden from you.
+          </Text>
+        </View>
+
         <Text style={s.secTitle}>📺 My Watchlist</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 12 }} style={{ maxHeight: 44 }}>
@@ -553,6 +587,12 @@ const s = StyleSheet.create({
   statBig: { color: C.text, fontSize: 15, fontWeight: '900' },
   statLbl: { color: C.faint, fontSize: 10, marginTop: 2 },
   genreLine: { color: C.secondary, fontSize: 13, fontWeight: '600', marginHorizontal: 16, marginTop: 6 },
+  reachCard: { backgroundColor: C.card, borderRadius: R.lg, borderWidth: 1, borderColor: C.border, marginHorizontal: 12, marginBottom: 10, padding: 14 },
+  reachRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 10 },
+  reachStat: { alignItems: 'center' },
+  reachN: { color: C.text, fontSize: 22, fontWeight: '900' },
+  reachL: { color: C.faint, fontSize: 11, marginTop: 2 },
+  reachNote: { color: C.muted, fontSize: 12, lineHeight: 18 },
   secTitle: { color: C.text, fontWeight: '800', fontSize: 16, marginHorizontal: 16, marginTop: 14, marginBottom: 6 },
   fchip: { borderWidth: 1, borderColor: C.border, backgroundColor: C.card, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 7, marginRight: 8, alignSelf: 'center' },
   fchipActive: { backgroundColor: C.secondary, borderColor: C.secondary },
