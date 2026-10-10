@@ -46,6 +46,8 @@ export interface AnimeItem {
   episodes?: number;
   status: string;
   year?: number;
+  broadcastDay?: string;  // e.g. "Saturdays" (JST) — from Jikan when online
+  broadcastTime?: string; // e.g. "24:00" (JST) — from Jikan when online
 }
 
 export interface PodcastShow {

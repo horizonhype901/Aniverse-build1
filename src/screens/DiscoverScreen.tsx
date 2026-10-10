@@ -9,6 +9,49 @@ import { searchAnime, seasonNow, topAiring } from '../lib/api';
 import { FALLBACK_ANIME, VIBES, ANIME_VIBES, Vibe } from '../data/seed';
 import { AnimeItem } from '../types';
 import AnimeCard from '../components/AnimeCard';
+import { nextAiringAt, countdownLabel, dayLabel, AiringSoon } from '../lib/airing';
+
+/** "📅 Airing This Week" — timezone-aware broadcast countdowns from Jikan data. */
+function AiringCalendar({ items, onPress }: { items: AnimeItem[]; onPress: (a: AnimeItem) => void }) {
+  const soon: AiringSoon[] = [];
+  for (const a of items) {
+    const at = nextAiringAt(a.broadcastDay, a.broadcastTime);
+    if (at !== null) soon.push({ id: a.id, title: a.title, at, dayLabel: dayLabel(at) });
+  }
+  soon.sort((x, y) => x.at - y.at);
+  const shown = soon.slice(0, 10);
+  if (shown.length === 0) return null;
+  const byDay: { label: string; list: AiringSoon[] }[] = [];
+  for (const s of shown) {
+    const g = byDay.find((x) => x.label === s.dayLabel);
+    if (g) g.list.push(s);
+    else byDay.push({ label: s.dayLabel, list: [s] });
+  }
+  const byId: Record<number, AnimeItem> = {};
+  items.forEach((a) => { byId[a.id] = a; });
+  return (
+    <View style={s.section}>
+      <Text style={s.sectionTitle}>📅 Airing This Week</Text>
+      <Text style={s.calHint}>Broadcast times converted to your timezone — no JST math.</Text>
+      {byDay.map((g) => (
+        <View key={g.label} style={s.calDay}>
+          <Text style={s.calDayLabel}>{g.label}</Text>
+          {g.list.map((it) => (
+            <Pressable
+              key={it.id}
+              style={s.calRow}
+              accessibilityLabel={`${it.title}, ${countdownLabel(it.at)}`}
+              onPress={() => { const a = byId[it.id]; if (a) onPress(a); }}
+            >
+              <Text style={s.calTitle} numberOfLines={1}>{it.title}</Text>
+              <Text style={s.calWhen}>{countdownLabel(it.at)}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
 
 function Section({ title, items, onPress }: { title: string; items: AnimeItem[]; onPress: (a: AnimeItem) => void }) {
   if (items.length === 0) return null;
@@ -173,6 +216,7 @@ export default function DiscoverScreen() {
                 </Pressable>
               )}
               <Section title="🔥 Airing Now" items={airing} onPress={open} />
+              <AiringCalendar items={airing} onPress={open} />
               <Section title="📅 This Season" items={season} onPress={open} />
             </>
           )}
@@ -197,6 +241,12 @@ const s = StyleSheet.create({
   vchipActive: { backgroundColor: C.secondary, borderColor: C.secondary },
   vchipText: { color: C.muted, fontWeight: '700', fontSize: 12 },
   empty: { color: C.faint, textAlign: 'center', marginTop: 60, fontSize: 15 },
+  calHint: { color: C.faint, fontSize: 11, marginHorizontal: 14, marginBottom: 6 },
+  calDay: { marginHorizontal: 12, marginBottom: 6, backgroundColor: C.card, borderRadius: R.lg, borderWidth: 1, borderColor: C.border, padding: 10 },
+  calDayLabel: { color: C.gold, fontSize: 12, fontWeight: '800', marginBottom: 4 },
+  calRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 5 },
+  calTitle: { color: C.text, fontSize: 14, fontWeight: '600', flex: 1, marginRight: 8 },
+  calWhen: { color: C.primary, fontSize: 12, fontWeight: '700' },
   errBox: { alignItems: 'center', marginTop: 60, paddingHorizontal: 30 },
   errText: { color: C.muted, textAlign: 'center', marginBottom: 12 },
   retry: { backgroundColor: C.primary, borderRadius: 20, paddingHorizontal: 24, paddingVertical: 10 },

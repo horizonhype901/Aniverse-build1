@@ -23,6 +23,8 @@ export function normAnime(a: any): AnimeItem {
     episodes: a.episodes ?? undefined,
     status: a.status || 'Unknown',
     year: a.year ?? a.aired?.prop?.from?.year ?? undefined,
+    broadcastDay: a.broadcast?.day ?? undefined,
+    broadcastTime: a.broadcast?.time ?? undefined,
   };
 }
 
