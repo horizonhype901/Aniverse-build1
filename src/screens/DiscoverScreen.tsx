@@ -11,7 +11,7 @@ import { AnimeItem, WatchEntry } from '../types';
 import AnimeCard from '../components/AnimeCard';
 import { nextAiringAt, countdownLabel, dayLabel, AiringSoon } from '../lib/airing';
 import { tasteMatches, TastePick } from '../lib/tastematch';
-import { store } from '../lib/store';
+import { isDelayFresh, store } from '../lib/store';
 
 /** "🎯 For You" — on-device taste-match picks with the reason shown. */
 function TasteRow({ picks, onPress }: { picks: TastePick[]; onPress: (a: AnimeItem) => void }) {
@@ -38,7 +38,7 @@ function TasteRow({ picks, onPress }: { picks: TastePick[]; onPress: (a: AnimeIt
     </View>
   );
 }
-function AiringCalendar({ items, onPress }: { items: AnimeItem[]; onPress: (a: AnimeItem) => void }) {
+function AiringCalendar({ items, delays, onPress }: { items: AnimeItem[]; delays: Record<string, number>; onPress: (a: AnimeItem) => void }) {
   const soon: AiringSoon[] = [];
   for (const a of items) {
     const at = nextAiringAt(a.broadcastDay, a.broadcastTime);
@@ -66,11 +66,17 @@ function AiringCalendar({ items, onPress }: { items: AnimeItem[]; onPress: (a: A
             <Pressable
               key={it.id}
               style={s.calRow}
-              accessibilityLabel={`${it.title}, ${countdownLabel(it.at)}`}
+              accessibilityLabel={
+                isDelayFresh(delays[String(it.id)])
+                  ? `${it.title}, delayed`
+                  : `${it.title}, ${countdownLabel(it.at)}`
+              }
               onPress={() => { const a = byId[it.id]; if (a) onPress(a); }}
             >
               <Text style={s.calTitle} numberOfLines={1}>{it.title}</Text>
-              <Text style={s.calWhen}>{countdownLabel(it.at)}</Text>
+              <Text style={s.calWhen}>
+                {isDelayFresh(delays[String(it.id)]) ? '⏳ delayed' : countdownLabel(it.at)}
+              </Text>
             </Pressable>
           ))}
         </View>
@@ -102,6 +108,7 @@ export default function DiscoverScreen() {
   const [results, setResults] = useState<AnimeItem[] | null>(null);
   const [airing, setAiring] = useState<AnimeItem[]>([]);
   const [season, setSeason] = useState<AnimeItem[]>([]);
+  const [delays, setDelays] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState('');
@@ -117,6 +124,7 @@ export default function DiscoverScreen() {
       const [a, b, w] = await Promise.all([topAiring(), seasonNow(), store.watchlist()]);
       setAiring(a);
       setSeason(b);
+      setDelays(await store.airingDelays());
       setPicks(tasteMatches(w, [...a, ...b, ...FALLBACK_ANIME]));
     } catch (e: any) {
       // API unreachable — fall back to the bundled catalog so the tab still works
@@ -247,7 +255,7 @@ export default function DiscoverScreen() {
               )}
               <TasteRow picks={picks} onPress={open} />
               <Section title="🔥 Airing Now" items={airing} onPress={open} />
-              <AiringCalendar items={airing} onPress={open} />
+              <AiringCalendar items={airing} delays={delays} onPress={open} />
               <Section title="📅 This Season" items={season} onPress={open} />
             </>
           )}

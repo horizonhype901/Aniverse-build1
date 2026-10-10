@@ -9,6 +9,7 @@ import { animeFull } from '../lib/api';
 import { store } from '../lib/store';
 import { AnimeItem, MangaEntry, ProgressEntry, WatchStatus, AnimeNote } from '../types';
 import { compact } from '../lib/format';
+import { isDelayFresh } from '../lib/store';
 
 const STATUSES: { key: WatchStatus; label: string }[] = [
   { key: 'watching', label: '▶️ Watching' },
@@ -38,6 +39,7 @@ export default function AnimeDetailScreen() {
   const [noteEp, setNoteEp] = useState('');
   const [noteText, setNoteText] = useState('');
   const [shieldSuggest, setShieldSuggest] = useState(false); // 🛡️ auto-suggest shield for airing anime
+  const [delayed, setDelayed] = useState(false); // ⏳ user-reported simulcast delay
 
   useEffect(() => {
     (async () => {
@@ -64,6 +66,9 @@ export default function AnimeDetailScreen() {
         // 📝 notes for this title
         const all = await store.notes();
         setNotes(all.filter((n) => n.animeId === animeId));
+        // ⏳ simulcast delay report (fresh = within one broadcast cycle)
+        const dl = await store.airingDelays();
+        setDelayed(isDelayFresh(dl[String(animeId)]));
       }
     })();
   }, [animeId]);
@@ -395,6 +400,23 @@ export default function AnimeDetailScreen() {
             <Pressable style={s.discussBtn} onPress={discuss}>
               <Text style={s.discussText}>💬 Discuss this anime</Text>
             </Pressable>
+            {/currently airing/i.test(anime?.status || '') && (
+              <Pressable
+                onPress={async () => {
+                  if (!animeId) return;
+                  const d = delayed
+                    ? await store.clearDelay(animeId)
+                    : await store.reportDelay(animeId);
+                  setDelayed(isDelayFresh(d[String(animeId)]));
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+                accessibilityLabel={delayed ? 'Clear the delay report' : "Report that this week's episode did not drop on time"}
+              >
+                <Text style={s.delayLink}>
+                  {delayed ? '✅ It dropped — clear delay' : "⏳ Episode didn't drop on time? Mark delayed"}
+                </Text>
+              </Pressable>
+            )}
             {shieldSuggest && (
               <View
                 style={s.shieldSuggest}
@@ -466,6 +488,7 @@ const s = StyleSheet.create({
   noteInput: { backgroundColor: C.card, borderRadius: R.md, borderWidth: 1, borderColor: C.border, color: C.text, padding: 10, fontSize: 14, marginBottom: 10 },
   discussBtn: { backgroundColor: C.card, borderRadius: R.lg, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: C.secondary },
   discussText: { color: C.secondary, fontWeight: '800', fontSize: 16 },
+  delayLink: { color: C.muted, fontSize: 13, textAlign: 'center', marginTop: 12, textDecorationLine: 'underline' },
   shieldSuggest: { backgroundColor: C.card2, borderRadius: R.lg, padding: 14, marginTop: 10, borderWidth: 1, borderColor: C.border },
   shieldSuggestText: { color: C.text, fontSize: 14, fontWeight: '600', lineHeight: 20, marginBottom: 10 },
   shieldSuggestRow: { flexDirection: 'row', alignItems: 'center' },

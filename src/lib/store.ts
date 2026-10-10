@@ -28,6 +28,7 @@ export const K = {
   lanes: 'aniverse:animeOnlyLanes:v1',  // 'yes' → 📺 anime-only mode hides manga-comparison posts/comments
   notes: 'aniverse:animeNotes:v1',      // AnimeNote[]
   calm: 'aniverse:calmMode:v1',         // 'yes' → 😌 calm mode hides like/reaction counts
+  delays: 'aniverse:airingDelays:v1',   // Record<animeId, reportedAt ms> — ⏳ user-reported simulcast delays
 };
 
 async function get<T>(key: string, fb: T): Promise<T> {
@@ -147,9 +148,29 @@ export const store = {
   // 😌 calm mode — hide like/reaction counts (zero-pressure posting)
   calmMode: async () => (await get<string>(K.calm, '')) === 'yes',
   saveCalmMode: (b: boolean) => set(K.calm, b ? 'yes' : ''),
+  // ⏳ user-reported simulcast delays (Airing This Week honesty)
+  airingDelays: () => get<Record<string, number>>(K.delays, {}),
+  saveAiringDelays: (d: Record<string, number>) => set(K.delays, d),
+  reportDelay: async (animeId: number | string) => {
+    const d = await get<Record<string, number>>(K.delays, {});
+    d[String(animeId)] = Date.now();
+    await set(K.delays, d);
+    return d;
+  },
+  clearDelay: async (animeId: number | string) => {
+    const d = await get<Record<string, number>>(K.delays, {});
+    delete d[String(animeId)];
+    await set(K.delays, d);
+    return d;
+  },
   // onboarding
   onboarded: () => get<string | null>(K.onboarded, null),
   setOnboarded: () => set(K.onboarded, 'yes'),
   favTopics: () => get<Topic[]>(K.favTopics, []),
   saveFavTopics: (t: Topic[]) => set(K.favTopics, t),
 };
+
+/** A delay report is fresh for 7 days (one broadcast cycle). */
+export function isDelayFresh(reportedAt: number | undefined, now: number = Date.now()): boolean {
+  return !!reportedAt && now - reportedAt < 7 * 24 * 3600 * 1000;
+}

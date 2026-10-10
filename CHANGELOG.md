@@ -101,6 +101,23 @@ Each entry cites the research evidence that motivated it.
 
 <!-- new entries go below -->
 
+### ⏳ Delay-aware Airing This Week (Discover + AnimeDetail)
+- Crunchyroll simulcast delays are routine and unannounced (Summer 2025: 8+
+  shows hours-to-a-day late; *Chitose Is in the Ramune Bottle* delayed weeks).
+  A countdown that assumes the schedule never lies is a countdown that lies.
+- Now: on any currently-airing anime's page, "⏳ Episode didn't drop on time?
+  Mark delayed" — the Airing This Week calendar flips that row to "⏳ delayed"
+  instead of a false countdown. "✅ It dropped — clear delay" removes it.
+  Reports auto-expire after 7 days (one broadcast cycle). All on-device.
+- Evidence: https://www.gamesradar.com/entertainment/anime-shows/sorry-anime-fans-new-episodes-may-be-arriving-later-this-week-as-streamer-crunchyroll-is-having-serious-issues-with-its-schedule/
+  ; https://comicbook.com/anime/news/crunchyroll-anime-late-uploads-let-down/
+  (both verified via research 2026-10-10)
+- Touched: `src/lib/store.ts` (airingDelays key + reportDelay/clearDelay +
+  isDelayFresh), `src/screens/AnimeDetailScreen.tsx` (report toggle, airing
+  titles only), `src/screens/DiscoverScreen.tsx` (delays plumbed into
+  AiringCalendar). Verified: tsc + expo-doctor 21/21 green; 6/6
+  delay-freshness unit checks.
+
 ### 😌 Calm mode — zero-pressure posting (Profile + PostCard + Feed + PostDetail)
 - 55% of Americans post less than five years ago; 51% say keeping up an
   online presence "feels like work" (Incogni survey, Aug 2026). Calm mode
