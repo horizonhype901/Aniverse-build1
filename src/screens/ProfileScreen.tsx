@@ -366,6 +366,18 @@ export default function ProfileScreen() {
           </Text>
         </View>
 
+        {/* 🚫 Zero-ads manifesto — the business model, stated plainly */}
+        <Text style={s.secTitle}>🚫 Zero Ads, Forever</Text>
+        <View style={s.reachCard}>
+          <Text style={s.reachNote}>
+            🚫 No ads. No ad-tech SDKs. No sponsored posts, no "promoted"
+            anything slipped into your feed. AniVerse makes nothing from your
+            attention — your feed is yours. This is a promise, not a setting:
+            there is nothing to turn off, because there was never anything to
+            turn on.
+          </Text>
+        </View>
+
         <Text style={s.secTitle}>📺 My Watchlist</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 12 }} style={{ maxHeight: 44 }}>

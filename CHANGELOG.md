@@ -101,6 +101,19 @@ Each entry cites the research evidence that motivated it.
 
 <!-- new entries go below -->
 
+### 🚫 Zero-ads manifesto card (Profile)
+- New "🚫 Zero Ads, Forever" pledge card next to Your Reach: no ads, no
+  ad-tech SDKs, no sponsored posts, no "promoted" anything — stated as a
+  promise, not a setting (nothing to turn off because there was never
+  anything to turn on). A headline differentiator against every ad-funded
+  feed on earth.
+- Evidence: 74% of users say there are too many ads (SurveyMonkey, via
+  Better Marketing, May 2025) —
+  https://medium.com/better-marketing/74-of-people-say-ads-are-getting-worse-are-you-one-of-them-6bd08186ef63
+  (URL verified resolving 2026-10-10).
+- Touched: `src/screens/ProfileScreen.tsx` (manifesto card reusing reachCard
+  styles). Verified: tsc + expo-doctor 21/21 green.
+
 ### 🛡️ Spoiler-shield auto-suggest (AnimeDetail)
 - When you add a Currently Airing anime to your watchlist (Watching / Plan to
   Watch) and its spoiler shield is off, an inline card appears: "🛡️ {title}
