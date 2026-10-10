@@ -30,16 +30,17 @@ export default function PostDetailScreen() {
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const [slowMsg, setSlowMsg] = useState('');
   const slowTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [animeOnly, setAnimeOnly] = useState(false); // 📺 anime-only lane
+  const [animeOnly, setAnimeOnly] = useState(false);
+  const [calmMode, setCalmMode] = useState(false); // 😌 calm mode hides counts
   const [mangaCmpDraft, setMangaCmpDraft] = useState(false); // draft comment compares to manga/LN
   const [myName, setMyName] = useState(''); // skip soft-spoiler scan on own comments
   const [revealedHints, setRevealedHints] = useState<string[]>([]); // 🔍 revealed hint-spoilers
 
   const load = useCallback(async () => {
-    const [posts, all, cl, r, mr, v, pr, pg, ao, prof] = await Promise.all([
+    const [posts, all, cl, r, mr, v, pr, pg, ao, cm, prof] = await Promise.all([
       store.posts(), store.comments(), store.commentLikes(),
       store.reactions(), store.myReactions(), store.votes(),
-      store.predictions(), store.progress(), store.animeOnly(), store.profile(),
+      store.predictions(), store.progress(), store.animeOnly(), store.calmMode(), store.profile(),
     ]);
     setPost(posts.find((x) => x.id === postId) || null);
     setComments((all[postId] || []).slice().sort((a, b) => b.createdAt - a.createdAt));
@@ -50,6 +51,7 @@ export default function PostDetailScreen() {
     setPredictions(pr);
     setProgress(pg);
     setAnimeOnly(ao);
+    setCalmMode(cm);
     setMyName(prof.username || '');
   }, [postId]);
 
@@ -265,6 +267,7 @@ export default function PostDetailScreen() {
           voted={votes[post.poll?.id || ''] ?? null}
           predictionMark={post.poll ? predictions[post.poll.id] ?? null : null}
           strictSpoiler={strict}
+              hideCounts={calmMode}
           onReact={toggleReaction}
           onOpen={() => {}}
           onVote={(i) => post.poll && castVote(post.poll, i)}

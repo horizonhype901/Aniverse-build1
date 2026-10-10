@@ -67,6 +67,7 @@ export default function ProfileScreen() {
   const [myComments, setMyComments] = useState(0);
   const [toast, setToast] = useState<{ msg: string; onUndo?: () => void } | null>(null);
   const [screenTime, setScreenTime] = useState<ScreenTime | null>(null);
+  const [calmMode, setCalmMode] = useState(false); // 😌 calm mode hides counts
   const [reach, setReach] = useState({ likes: 0, comments: 0, reacts: 0 });
   const [manga, setManga] = useState<MangaEntry[]>([]);
   const [mangaTitle, setMangaTitle] = useState('');
@@ -80,11 +81,11 @@ export default function ProfileScreen() {
   };
 
   const load = useCallback(async () => {
-    const [p, w, s, posts, pg, ci, pr, li, mu, cm, st, mg, rx] = await Promise.all([
+    const [p, w, s, posts, pg, ci, pr, li, mu, cm, st, mg, rx, calm] = await Promise.all([
       store.profile(), store.watchlist(), store.subs(), store.posts(),
       store.progress(), store.checkins(), store.predictions(),
       store.listening(), store.mutes(), store.comments(), loadScreenTime(), store.manga(),
-      store.reactions(),
+      store.reactions(), store.calmMode(),
     ]);
     setProfile(p);
     setWatch(w);
@@ -98,6 +99,7 @@ export default function ProfileScreen() {
     setMyComments((Object.values(cm).flat() as any[]).filter((c) => c.author === p.username).length);
     setScreenTime(st);
     setManga(mg);
+    setCalmMode(calm);
     // 📣 reach: honest per-post engagement totals, computed on-device
     const mine = posts.filter((x) => x.author === p.username);
     const myIds = new Set(mine.map((x) => x.id));
@@ -495,6 +497,31 @@ export default function ProfileScreen() {
               );
             })}
           </View>
+        </View>
+
+        <Text style={s.secTitle}>😌 Calm mode</Text>
+        <View style={s.card}>
+          <Text style={s.nudgeDesc}>
+            Hide like and reaction counts everywhere — yours and everyone
+            else's. Post because you want to, not for the numbers. 🔒 Just a
+            display setting on your phone; nothing is hidden from anyone but
+            you.
+          </Text>
+          <Pressable
+            accessibilityRole="switch"
+            accessibilityState={{ checked: calmMode }}
+            accessibilityLabel="Calm mode: hide like and reaction counts"
+            onPress={async () => {
+              const next = !calmMode;
+              setCalmMode(next);
+              await store.saveCalmMode(next);
+            }}
+            style={[s.nchip, calmMode && s.nchipActive]}
+          >
+            <Text style={[s.nchipText, calmMode && { color: '#fff' }]}>
+              {calmMode ? '😌 Calm mode: ON' : '😌 Calm mode: OFF'}
+            </Text>
+          </Pressable>
         </View>
 
         <Text style={s.secTitle}>🎙️ Subscribed Podcasts</Text>

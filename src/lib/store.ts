@@ -27,6 +27,7 @@ export const K = {
   openStudio: 'aniverse:openStudio:v1', // 'yes' → open AvatarStudio after onboarding
   lanes: 'aniverse:animeOnlyLanes:v1',  // 'yes' → 📺 anime-only mode hides manga-comparison posts/comments
   notes: 'aniverse:animeNotes:v1',      // AnimeNote[]
+  calm: 'aniverse:calmMode:v1',         // 'yes' → 😌 calm mode hides like/reaction counts
 };
 
 async function get<T>(key: string, fb: T): Promise<T> {
@@ -143,6 +144,9 @@ export const store = {
   // 📝 per-anime episode notes (unified title hub)
   notes: () => get<AnimeNote[]>(K.notes, []),
   saveNotes: (n: AnimeNote[]) => set(K.notes, n),
+  // 😌 calm mode — hide like/reaction counts (zero-pressure posting)
+  calmMode: async () => (await get<string>(K.calm, '')) === 'yes',
+  saveCalmMode: (b: boolean) => set(K.calm, b ? 'yes' : ''),
   // onboarding
   onboarded: () => get<string | null>(K.onboarded, null),
   setOnboarded: () => set(K.onboarded, 'yes'),

@@ -134,6 +134,7 @@ interface Props {
   onAvatarPress?: () => void;
   shieldHint?: string;
   onShieldAnime?: (animeTag: string) => void; // one-tap "hide all spoilers for this anime"
+  hideCounts?: boolean; // 😌 calm mode — hide like/reaction counts
 }
 
 export default function PostCard(p: Props) {
@@ -265,17 +266,17 @@ export default function PostCard(p: Props) {
               }}
             >
               <Text style={s.reactEmoji}>{e}</Text>
-              {n > 0 && <Text style={[s.reactCount, mine && { color: C.primary }]}>{compact(n)}</Text>}
+              {n > 0 && !p.hideCounts && <Text style={[s.reactCount, mine && { color: C.primary }]}>{compact(n)}</Text>}
             </Pressable>
           );
         })}
-        {totalReactions > 0 && (
+        {totalReactions > 0 && !p.hideCounts && (
           <Text style={s.reactTotal}>{compact(totalReactions)}</Text>
         )}
       </View>
       <View style={s.foot}>
         <Pressable style={s.footBtn} onPress={p.onOpen}>
-          <Text style={s.footText}>💬 {compact(p.commentCount)}</Text>
+          <Text style={s.footText}>💬{p.hideCounts ? '' : ` ${compact(p.commentCount)}`}</Text>
         </Pressable>
         <Pressable style={s.footBtn} onPress={share}>
           <Text style={s.footText}>↗ Share</Text>

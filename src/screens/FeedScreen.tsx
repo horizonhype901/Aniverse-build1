@@ -35,15 +35,16 @@ export default function FeedScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [nudgeOpen, setNudgeOpen] = useState(false);
   const [nudgeMin, setNudgeMin] = useState(30);
-  const [animeOnly, setAnimeOnly] = useState(false); // 📺 anime-only lanes
+  const [animeOnly, setAnimeOnly] = useState(false);
+  const [calmMode, setCalmMode] = useState(false); // 😌 calm mode hides counts
   const [feedTime, setFeedTime] = useState('⏱️ 0m'); // ⏱️ continuous session-time pill
 
   const load = useCallback(async () => {
     await ensureSeeded();
-    const [p, c, r, mr, v, pr, m, pg, ao] = await Promise.all([
+    const [p, c, r, mr, v, pr, m, pg, ao, cm] = await Promise.all([
       store.posts(), store.comments(), store.reactions(), store.myReactions(),
       store.votes(), store.predictions(), store.mutes(), store.progress(),
-      store.animeOnly(),
+      store.animeOnly(), store.calmMode(),
     ]);
     setPosts(p);
     const counts: Record<string, number> = {};
@@ -56,6 +57,7 @@ export default function FeedScreen() {
     setMutes(m);
     setProgress(pg);
     setAnimeOnly(ao);
+    setCalmMode(cm);
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -272,6 +274,7 @@ export default function FeedScreen() {
               voted={votes[item.poll?.id || ''] ?? null}
               predictionMark={item.poll ? predictions[item.poll.id] ?? null : null}
               strictSpoiler={strict}
+              hideCounts={calmMode}
               onReact={(e) => toggleReaction(item, e)}
               onOpen={() => nav.navigate('PostDetail', { postId: item.id })}
               onAvatarPress={() => nav.navigate('UserProfile', { author: item.author })}

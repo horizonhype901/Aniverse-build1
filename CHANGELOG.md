@@ -101,6 +101,21 @@ Each entry cites the research evidence that motivated it.
 
 <!-- new entries go below -->
 
+### 😌 Calm mode — zero-pressure posting (Profile + PostCard + Feed + PostDetail)
+- 55% of Americans post less than five years ago; 51% say keeping up an
+  online presence "feels like work" (Incogni survey, Aug 2026). Calm mode
+  answers: a "😌 Calm mode" switch in Profile hides like and reaction counts
+  everywhere — yours and everyone else's — in the feed and in threads.
+  Reactions still work (your pick still highlights); the numbers just stop
+  performing for you. Pure display setting, on-device.
+- Evidence: https://www.consumeraffairs.com/news/the-social-media-slowdown-why-more-americans-are-quietly-logging-off-080626.html
+  (verified resolving via research 2026-10-10)
+- New: `store.calmMode()` / `store.saveCalmMode()` (`aniverse:calmMode:v1`).
+  Touched: `src/components/PostCard.tsx` (hideCounts prop), `src/screens/
+  FeedScreen.tsx`, `src/screens/PostDetailScreen.tsx` (load + pass-through),
+  `src/screens/ProfileScreen.tsx` (toggle card). Verified: tsc +
+  expo-doctor 21/21 green.
+
 ### 🔍 Soft-spoiler scanner for thread comments (PostDetail)
 - ResetEra's 100+ reply thread documents the real thread-killer: not outright
   plot reveals but *soft spoilers* — vague hints ("don't get too attached"),
