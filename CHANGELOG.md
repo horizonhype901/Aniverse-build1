@@ -101,6 +101,20 @@ Each entry cites the research evidence that motivated it.
 
 <!-- new entries go below -->
 
+### 🛡️ Spoiler-shield auto-suggest (AnimeDetail)
+- When you add a Currently Airing anime to your watchlist (Watching / Plan to
+  Watch) and its spoiler shield is off, an inline card appears: "🛡️ {title}
+  is airing now — spoilers are everywhere. Shield them?" One tap enables
+  per-anime protection; "Not now" dismisses. Never shows for finished shows,
+  other statuses, or when the shield is already on.
+- Evidence: manga readers spoil/harp on anime-onlys; anime-only fans' survival
+  guides treat unshielded feeds as hostile territory —
+  https://www.resetera.com/threads/manga-readers-that-spoil-shit-for-anime-watchers.246292/page-3 ;
+  https://myanimelist.net/forum/?topicid=1911903
+- Touched: `src/screens/AnimeDetailScreen.tsx` (shieldSuggest state, suggest
+  card, enableSuggestedShield). Verified: tsc + expo-doctor 21/21 green;
+  10/10 unit checks on the suggest predicate (status × airing × already-shielded).
+
 ### ⏱️ Continuous session-time display in the feed header
 - The feed header now shows a live "⏱️ 12m" pill — your focused feed time
   today, ticking up every few seconds from the on-device screen-time tracker.

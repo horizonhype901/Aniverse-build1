@@ -37,6 +37,7 @@ export default function AnimeDetailScreen() {
   const [notes, setNotes] = useState<AnimeNote[]>([]);
   const [noteEp, setNoteEp] = useState('');
   const [noteText, setNoteText] = useState('');
+  const [shieldSuggest, setShieldSuggest] = useState(false); // 🛡️ auto-suggest shield for airing anime
 
   useEffect(() => {
     (async () => {
@@ -121,6 +122,13 @@ export default function AnimeDetailScreen() {
     await store.saveWatchlist(rest);
     setStatus(s);
     if (n !== undefined) setNote(n);
+    // 🛡️ auto-suggest the spoiler shield when tracking a currently-airing anime
+    if ((s === 'watching' || s === 'plan') && animeId && /currently airing/i.test(anime.status || '')) {
+      const pg = await store.progress();
+      setShieldSuggest(!pg[animeId]?.hideSpoilers);
+    } else {
+      setShieldSuggest(false);
+    }
   };
 
   const bumpProgress = async (delta: number) => {
@@ -157,6 +165,18 @@ export default function AnimeDetailScreen() {
     pg[animeId] = { ...progress, hideSpoilers: !progress.hideSpoilers };
     await store.saveProgress(pg);
     setProgress(pg[animeId]);
+  };
+
+  // 🛡️ one-tap enable from the auto-suggest card
+  const enableSuggestedShield = async () => {
+    if (!anime || !animeId) return;
+    const pg = await store.progress();
+    const cur = pg[animeId] || { title: anime.title, watched: 0, hideSpoilers: false };
+    pg[animeId] = { ...cur, hideSpoilers: true, title: cur.title || anime.title };
+    await store.saveProgress(pg);
+    setProgress(pg[animeId]);
+    setShieldSuggest(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   const discuss = () => {
@@ -375,6 +395,24 @@ export default function AnimeDetailScreen() {
             <Pressable style={s.discussBtn} onPress={discuss}>
               <Text style={s.discussText}>💬 Discuss this anime</Text>
             </Pressable>
+            {shieldSuggest && (
+              <View
+                style={s.shieldSuggest}
+                accessibilityLabel={`Spoiler shield suggestion for ${anime?.title}`}
+              >
+                <Text style={s.shieldSuggestText}>
+                  🛡️ {anime?.title} is airing now — spoilers are everywhere. Shield them?
+                </Text>
+                <View style={s.shieldSuggestRow}>
+                  <Pressable style={s.shieldSuggestBtn} onPress={enableSuggestedShield}>
+                    <Text style={s.shieldSuggestBtnText}>🙈 Enable shield</Text>
+                  </Pressable>
+                  <Pressable onPress={() => setShieldSuggest(false)} accessibilityLabel="Dismiss spoiler shield suggestion">
+                    <Text style={s.shieldSuggestDismiss}>Not now</Text>
+                  </Pressable>
+                </View>
+              </View>
+            )}
           </View>
         </ScrollView>
       )}
@@ -428,4 +466,10 @@ const s = StyleSheet.create({
   noteInput: { backgroundColor: C.card, borderRadius: R.md, borderWidth: 1, borderColor: C.border, color: C.text, padding: 10, fontSize: 14, marginBottom: 10 },
   discussBtn: { backgroundColor: C.card, borderRadius: R.lg, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: C.secondary },
   discussText: { color: C.secondary, fontWeight: '800', fontSize: 16 },
+  shieldSuggest: { backgroundColor: C.card2, borderRadius: R.lg, padding: 14, marginTop: 10, borderWidth: 1, borderColor: C.border },
+  shieldSuggestText: { color: C.text, fontSize: 14, fontWeight: '600', lineHeight: 20, marginBottom: 10 },
+  shieldSuggestRow: { flexDirection: 'row', alignItems: 'center' },
+  shieldSuggestBtn: { backgroundColor: C.primary, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 8, marginRight: 14 },
+  shieldSuggestBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
+  shieldSuggestDismiss: { color: C.muted, fontWeight: '600', fontSize: 14 },
 });
