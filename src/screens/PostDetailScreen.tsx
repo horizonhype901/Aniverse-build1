@@ -8,6 +8,7 @@ import * as Haptics from 'expo-haptics';
 import { C } from '../theme';
 import { store } from '../lib/store';
 import { Comment, Poll, Post, ProgressEntry } from '../types';
+import { hasSoftSpoiler, scanSoftSpoiler, softSpoilerReason } from '../lib/softspoiler';
 import { SLOW_MODE_SEC, slowModeWait } from '../lib/kindness';
 import PostCard, { Avatar } from '../components/PostCard';
 import { timeAgo } from '../lib/format';
@@ -31,12 +32,14 @@ export default function PostDetailScreen() {
   const slowTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [animeOnly, setAnimeOnly] = useState(false); // 📺 anime-only lane
   const [mangaCmpDraft, setMangaCmpDraft] = useState(false); // draft comment compares to manga/LN
+  const [myName, setMyName] = useState(''); // skip soft-spoiler scan on own comments
+  const [revealedHints, setRevealedHints] = useState<string[]>([]); // 🔍 revealed hint-spoilers
 
   const load = useCallback(async () => {
-    const [posts, all, cl, r, mr, v, pr, pg, ao] = await Promise.all([
+    const [posts, all, cl, r, mr, v, pr, pg, ao, prof] = await Promise.all([
       store.posts(), store.comments(), store.commentLikes(),
       store.reactions(), store.myReactions(), store.votes(),
-      store.predictions(), store.progress(), store.animeOnly(),
+      store.predictions(), store.progress(), store.animeOnly(), store.profile(),
     ]);
     setPost(posts.find((x) => x.id === postId) || null);
     setComments((all[postId] || []).slice().sort((a, b) => b.createdAt - a.createdAt));
@@ -47,6 +50,7 @@ export default function PostDetailScreen() {
     setPredictions(pr);
     setProgress(pg);
     setAnimeOnly(ao);
+    setMyName(prof.username || '');
   }, [postId]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -176,7 +180,25 @@ export default function PostDetailScreen() {
             <Text style={s.cTime}>{timeAgo(c.createdAt)}</Text>
             {c.mangaComparisons && <Text style={s.cMangaTag}>📖</Text>}
           </View>
-          <Text style={s.cBody}>{c.body}</Text>
+          {(() => {
+            // 🔍 soft-spoiler gate: collapse hint-spoilers behind tap-to-reveal
+            const hit = c.author === myName ? null : scanSoftSpoiler(c.body);
+            const flagged = hit !== null && hasSoftSpoiler(hit);
+            const revealed = revealedHints.includes(c.id);
+            if (flagged && !revealed) {
+              return (
+                <Pressable
+                  onPress={() => setRevealedHints([...revealedHints, c.id])}
+                  style={s.hintHidden}
+                  accessibilityLabel={`Possible hint-spoiler: ${softSpoilerReason(hit!)}. Tap to reveal.`}
+                >
+                  <Text style={s.hintHiddenText}>⚠️ Possible hint-spoiler</Text>
+                  <Text style={s.hintHiddenSub}>{softSpoilerReason(hit!)} — tap to reveal</Text>
+                </Pressable>
+              );
+            }
+            return <Text style={s.cBody}>{c.body}</Text>;
+          })()}
           <View style={s.cActions}>
             <Pressable onPress={() => toggleCommentLike(c)}>
               <Text style={[s.cLike, commentLikes.includes(c.id) && { color: C.primary }]}>
@@ -328,6 +350,9 @@ const s = StyleSheet.create({
   cAuthor: { color: C.text, fontWeight: '700', fontSize: 13, marginRight: 8 },
   cTime: { color: C.faint, fontSize: 11 },
   cBody: { color: C.muted, fontSize: 14, lineHeight: 20 },
+  hintHidden: { backgroundColor: C.card2, borderRadius: 8, padding: 10, borderWidth: 1, borderStyle: 'dashed', borderColor: C.border },
+  hintHiddenText: { color: C.gold, fontSize: 13, fontWeight: '800' },
+  hintHiddenSub: { color: C.muted, fontSize: 12, marginTop: 2 },
   cActions: { flexDirection: 'row', marginTop: 6 },
   cLike: { color: C.faint, fontSize: 12, fontWeight: '700', marginRight: 16 },
   cReply: { color: C.secondary, fontSize: 12, fontWeight: '700' },

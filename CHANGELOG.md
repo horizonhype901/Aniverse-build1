@@ -101,6 +101,23 @@ Each entry cites the research evidence that motivated it.
 
 <!-- new entries go below -->
 
+### 🔍 Soft-spoiler scanner for thread comments (PostDetail)
+- ResetEra's 100+ reply thread documents the real thread-killer: not outright
+  plot reveals but *soft spoilers* — vague hints ("don't get too attached"),
+  fake "theories" that are really spoilers, chapter-number mentions. Users
+  stopped visiting discussion threads entirely. Hard spoiler blur can't catch
+  these — they're never tagged.
+- New on-device scanner (`src/lib/softspoiler.ts`): chapter citations
+  ("chapter 45", "ch. 12") + 10 curated hint-phrase patterns. Matching
+  comments collapse behind "⚠️ Possible hint-spoiler — tap to reveal" with
+  the reason shown. Your own comments are never scanned. False positives
+  cost one tap; false negatives are what drove people off forums.
+- Evidence: https://www.resetera.com/threads/manga-readers-that-spoil-shit-for-anime-watchers.246292/page-2
+  (thread active, verified via research 2026-10-10)
+- Touched: `src/lib/softspoiler.ts` (new), `src/screens/PostDetailScreen.tsx`
+  (per-comment scan, tap-to-reveal gate, own-comment skip). Verified: tsc +
+  expo-doctor 21/21 green; 10/10 unit checks (hints, chapter refs, negatives).
+
 ### 🚫 Zero-ads manifesto card (Profile)
 - New "🚫 Zero Ads, Forever" pledge card next to Your Reach: no ads, no
   ad-tech SDKs, no sponsored posts, no "promoted" anything — stated as a
