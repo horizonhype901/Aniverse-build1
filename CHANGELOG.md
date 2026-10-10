@@ -101,6 +101,20 @@ Each entry cites the research evidence that motivated it.
 
 <!-- new entries go below -->
 
+### 📝 Episode notes on anime detail pages (unified per-title hub, part 1)
+- Each anime page now has a "📝 My notes" card: add timestamped notes with an
+  optional episode reference ("Ep 12"), list and delete — all on-device.
+  Theories, favorite moments, and episode reactions live with the title
+  instead of scattered across apps.
+- Part 2 (where-to-watch availability) needs licensor data → logged in
+  BACKEND-BACKLOG.md with evidence links.
+- Evidence: fans juggle AniList/MangaDex/Reddit/Google per title; no single
+  home for title-level tracking (fandom fragmentation research, sprint 2).
+- Touched: `src/types.ts` (AnimeNote), `src/lib/store.ts` (notes key +
+  accessors), `src/screens/AnimeDetailScreen.tsx`. Verified: tsc +
+  expo-doctor 21/21 green (one missing import caught by tsc mid-cycle, fixed
+  before commit finalized).
+
 ### 📣 Your Reach — never-shadowbanned transparency (Profile)
 - New card totals YOUR posts' likes, reactions, and replies — computed
   on-device from local data — with a plain-language promise: no algorithm,

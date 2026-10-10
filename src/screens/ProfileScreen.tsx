@@ -56,7 +56,7 @@ export default function ProfileScreen() {
   const [watch, setWatch] = useState<WatchEntry[]>([]);
   const [subs, setSubs] = useState<PodcastShow[]>([]);
   const [myPosts, setMyPosts] = useState<Post[]>([]);
-  const [progress, setProgress] = useState<Record<number, ProgressEntry>>({});
+  const [progress, setProgress] = useState<Record<string, ProgressEntry>>({});
   const [checkins, setCheckins] = useState<string[]>([]);
   const [predictions, setPredictions] = useState<Record<string, 'right' | 'wrong'>>({});
   const [listening, setListening] = useState<ListeningStats>({ episodesCompleted: 0, secondsListened: 0, completedIds: [] });

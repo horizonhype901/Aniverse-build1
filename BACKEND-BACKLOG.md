@@ -9,6 +9,21 @@ Format: `### <idea>` — need, evidence, stub location, local behavior today.
 
 <!-- entries go below -->
 
+### Where-to-watch availability per title
+- Need: which services legally stream each anime (and "nowhere — Blu-ray only"
+  states), so fans can rotate subscriptions instead of stacking them. Requires
+  licensor/availability data (paid API or scraped dataset + license).
+- Evidence: anime scattered across services, nobody wants another subscription
+  for one show — https://myanimelist.net/forum/?topicid=2141411&show=0&msgid=70473568 ;
+  flagship titles vanishing from legal streaming (FMA 2003, May 2026) —
+  https://comicbook.com/anime/news/anime-fans-are-heartbroken-one-of-the-biggest-series-isnt-streaming-anywhere/ ;
+  fans stacking Crunchyroll + Netflix, "keep one anchor, rotate the rest" —
+  https://huntervault.app/blog/anime-streaming-subscription-budget/
+- On-device today: the title hub (progress, episode notes, manga bridge) is
+  ready; stub point (when built): `src/lib/watchwhere.ts` —
+  `availability(animeId)` returns cached service list + last-checked date;
+  AnimeDetail renders a "📺 Where to watch" card from it.
+
 ### Watch-party scheduler + spoiler-safe reaction layer
 - Need: coordinating a watch slot across friends/timezones + a shared live
   reaction feed. The reaction feed needs peers (server or P2P sync).
