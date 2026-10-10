@@ -101,6 +101,17 @@ Each entry cites the research evidence that motivated it.
 
 <!-- new entries go below -->
 
+### 📣 Your Reach — never-shadowbanned transparency (Profile)
+- New card totals YOUR posts' likes, reactions, and replies — computed
+  on-device from local data — with a plain-language promise: no algorithm,
+  no downranking, no shadowbans; every post reaches everyone browsing New
+  and Hot. A direct answer to creator shadowban anxiety.
+- Evidence: creators report reach collapsing overnight with zero notice or
+  explanation; Instagram has never officially acknowledged shadowbanning —
+  https://pctechmag.com/2026/09/instagram-shadowban-signs-causes-and-how-to-recover/
+- Touched: `src/screens/ProfileScreen.tsx` (loads reactions, computes reach
+  totals, reachCard UI). Verified: tsc + expo-doctor 21/21 green.
+
 ### 🙈 One-tap spoiler shield (PostCard + Feed + PostDetail)
 - Spoiler-blurred posts now carry a "🙈 Hide all spoilers for {anime}" button —
   one tap enables that anime's spoiler shield without leaving the feed/thread.

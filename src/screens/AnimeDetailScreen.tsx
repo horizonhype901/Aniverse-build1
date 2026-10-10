@@ -7,7 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { C, R } from '../theme';
 import { animeFull } from '../lib/api';
 import { store } from '../lib/store';
-import { AnimeItem, MangaEntry, ProgressEntry, WatchStatus } from '../types';
+import { AnimeItem, MangaEntry, ProgressEntry, WatchStatus, AnimeNote } from '../types';
 import { compact } from '../lib/format';
 
 const STATUSES: { key: WatchStatus; label: string }[] = [
@@ -34,6 +34,9 @@ export default function AnimeDetailScreen() {
   const [linkedManga, setLinkedManga] = useState<MangaEntry | null>(null);
   const [mangaTitle, setMangaTitle] = useState('');
   const [mangaChapter, setMangaChapter] = useState('');
+  const [notes, setNotes] = useState<AnimeNote[]>([]);
+  const [noteEp, setNoteEp] = useState('');
+  const [noteText, setNoteText] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -57,6 +60,9 @@ export default function AnimeDetailScreen() {
         // manga bridge: is this anime continued in the manga shelf?
         const mg = await store.manga();
         setLinkedManga(mg.find((m) => m.fromAnime?.id === animeId) || null);
+        // 📝 notes for this title
+        const all = await store.notes();
+        setNotes(all.filter((n) => n.animeId === animeId));
       }
     })();
   }, [animeId]);
@@ -79,6 +85,31 @@ export default function AnimeDetailScreen() {
     setMangaTitle('');
     setMangaChapter('');
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const addNote = async () => {
+    if (!noteText.trim() || !animeId || !anime) return;
+    const entry: AnimeNote = {
+      id: `n-${Date.now()}`,
+      animeId,
+      animeTitle: anime.title,
+      episode: noteEp.trim() || undefined,
+      text: noteText.trim(),
+      createdAt: Date.now(),
+    };
+    const all = await store.notes();
+    await store.saveNotes([entry, ...all]);
+    setNotes([entry, ...notes]);
+    setNoteEp('');
+    setNoteText('');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const removeNote = async (id: string) => {
+    const all = await store.notes();
+    const next = all.filter((n) => n.id !== id);
+    await store.saveNotes(next);
+    setNotes(next.filter((n) => n.animeId === animeId));
   };
 
   const setWatch = async (s: WatchStatus | null, n?: string) => {
@@ -266,6 +297,46 @@ export default function AnimeDetailScreen() {
             )}
           </View>
 
+          {/* 📝 episode notes — the title's personal hub */}
+          <View style={s.card}>
+            <Text style={s.cardTitle}>📝 My notes</Text>
+            {notes.length === 0 && (
+              <Text style={s.bridgeHint}>
+                Theories, favorite moments, episode reactions — kept with the title.
+              </Text>
+            )}
+            {notes.map((n) => (
+              <View key={n.id} style={s.noteRow}>
+                <View style={{ flex: 1 }}>
+                  {n.episode ? <Text style={s.noteEp}>Ep {n.episode}</Text> : null}
+                  <Text style={s.noteText}>{n.text}</Text>
+                </View>
+                <Pressable onPress={() => removeNote(n.id)}>
+                  <Text style={s.noteDel}>✕</Text>
+                </Pressable>
+              </View>
+            ))}
+            <View style={s.bridgeForm}>
+              <TextInput
+                style={[s.noteInput, { width: 70, marginRight: 8 }]}
+                value={noteEp}
+                onChangeText={setNoteEp}
+                placeholder="Ep #"
+                placeholderTextColor={C.faint}
+              />
+              <TextInput
+                style={[s.noteInput, { flex: 1, marginRight: 8 }]}
+                value={noteText}
+                onChangeText={setNoteText}
+                placeholder="Add a note…"
+                placeholderTextColor={C.faint}
+              />
+              <Pressable style={s.addBtn} onPress={addNote}>
+                <Text style={s.addText}>＋</Text>
+              </Pressable>
+            </View>
+          </View>
+
           <View style={s.actions}>
             {status === null ? (
               <Pressable style={s.addBtn} onPress={() => setWatch('watching')}>
@@ -332,6 +403,10 @@ const s = StyleSheet.create({
   bridgeTitle: { color: C.text, fontWeight: '700', fontSize: 14 },
   bridgeSub: { color: C.accent, fontSize: 12, marginTop: 3, fontWeight: '600' },
   bridgeHint: { color: C.faint, fontSize: 12, lineHeight: 17, marginBottom: 10 },
+  noteRow: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: C.card2, borderRadius: R.md, padding: 10, marginBottom: 8 },
+  noteEp: { color: C.gold, fontSize: 11, fontWeight: '800', marginBottom: 2 },
+  noteText: { color: C.text, fontSize: 13, lineHeight: 18 },
+  noteDel: { color: C.faint, fontSize: 14, padding: 4 },
   bridgeForm: { flexDirection: 'row', alignItems: 'center' },
   stepRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   stepBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.card2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.border },

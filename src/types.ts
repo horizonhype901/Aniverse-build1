@@ -87,6 +87,15 @@ export interface MangaEntry {
 
 export interface ProgressEntry { title: string; watched: number; total?: number; hideSpoilers: boolean; }
 
+export interface AnimeNote {
+  id: string;
+  animeId: number;
+  animeTitle: string;
+  episode?: string; // free text: "12", "S2E3", "finale"…
+  text: string;
+  createdAt: number;
+}
+
 export interface ListeningStats { episodesCompleted: number; secondsListened: number; completedIds: string[]; }
 
 export interface Mutes { words: string[]; anime: string[]; }

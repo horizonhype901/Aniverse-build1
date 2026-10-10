@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Comment, ListeningStats, MangaEntry, Mutes, Post, Profile, ProgressEntry, Topic, WatchEntry } from '../types';
+import { AnimeNote, Comment, ListeningStats, MangaEntry, Mutes, Post, Profile, ProgressEntry, Topic, WatchEntry } from '../types';
 import { SEED_COMMENTS, SEED_POSTS, SEED_REACTIONS } from '../data/seed';
 
 export const K = {
@@ -26,6 +26,7 @@ export const K = {
   studioTab: 'aniverse:studioTab:v1',   // string (avatar studio last category)
   openStudio: 'aniverse:openStudio:v1', // 'yes' → open AvatarStudio after onboarding
   lanes: 'aniverse:animeOnlyLanes:v1',  // 'yes' → 📺 anime-only mode hides manga-comparison posts/comments
+  notes: 'aniverse:animeNotes:v1',      // AnimeNote[]
 };
 
 async function get<T>(key: string, fb: T): Promise<T> {
@@ -139,6 +140,9 @@ export const store = {
   // 📺 anime-only thread lanes
   animeOnly: async () => (await get<string>(K.lanes, '')) === 'yes',
   saveAnimeOnly: (b: boolean) => set(K.lanes, b ? 'yes' : ''),
+  // 📝 per-anime episode notes (unified title hub)
+  notes: () => get<AnimeNote[]>(K.notes, []),
+  saveNotes: (n: AnimeNote[]) => set(K.notes, n),
   // onboarding
   onboarded: () => get<string | null>(K.onboarded, null),
   setOnboarded: () => set(K.onboarded, 'yes'),
