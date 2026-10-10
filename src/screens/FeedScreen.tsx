@@ -35,12 +35,14 @@ export default function FeedScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [nudgeOpen, setNudgeOpen] = useState(false);
   const [nudgeMin, setNudgeMin] = useState(30);
+  const [animeOnly, setAnimeOnly] = useState(false); // 📺 anime-only lanes
 
   const load = useCallback(async () => {
     await ensureSeeded();
-    const [p, c, r, mr, v, pr, m, pg] = await Promise.all([
+    const [p, c, r, mr, v, pr, m, pg, ao] = await Promise.all([
       store.posts(), store.comments(), store.reactions(), store.myReactions(),
       store.votes(), store.predictions(), store.mutes(), store.progress(),
+      store.animeOnly(),
     ]);
     setPosts(p);
     const counts: Record<string, number> = {};
@@ -52,6 +54,7 @@ export default function FeedScreen() {
     setPredictions(pr);
     setMutes(m);
     setProgress(pg);
+    setAnimeOnly(ao);
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -157,6 +160,7 @@ export default function FeedScreen() {
 
   const visible = posts.filter((x) => {
     if (topic !== 'All' && x.topic !== topic) return false;
+    if (animeOnly && x.mangaComparisons) return false; // 📺 anime-only lane
     if (x.animeTag && mutedAnime.has(x.animeTag.toLowerCase())) return false;
     if (mutedWords.length > 0) {
       const hay = `${x.title} ${x.body}`.toLowerCase();
@@ -197,12 +201,26 @@ export default function FeedScreen() {
             </Pressable>
           );
         })}
+        <Pressable
+          onPress={async () => {
+            const next = !animeOnly;
+            setAnimeOnly(next);
+            await store.saveAnimeOnly(next);
+          }}
+          style={[s.chip, animeOnly && { backgroundColor: C.gold, borderColor: C.gold }]}
+          accessibilityLabel="Anime-only mode: hide posts comparing to the manga"
+        >
+          <Text style={[s.chipText, animeOnly && { color: '#fff' }]}>📺 Anime-only</Text>
+        </Pressable>
       </ScrollView>
 
       {mutedCount > 0 && (
         <Text style={s.mutedNote}>
           🙈 {mutedCount} {mutedCount === 1 ? 'post' : 'posts'} hidden by your mute filters
         </Text>
+      )}
+      {animeOnly && (
+        <Text style={s.mutedNote}>📺 Anime-only mode — manga-comparison posts hidden</Text>
       )}
       <Text style={s.sortNote}>
         {sort === 'hot'

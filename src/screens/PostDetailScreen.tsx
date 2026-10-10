@@ -29,12 +29,14 @@ export default function PostDetailScreen() {
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const [slowMsg, setSlowMsg] = useState('');
   const slowTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [animeOnly, setAnimeOnly] = useState(false); // 📺 anime-only lane
+  const [mangaCmpDraft, setMangaCmpDraft] = useState(false); // draft comment compares to manga/LN
 
   const load = useCallback(async () => {
-    const [posts, all, cl, r, mr, v, pr, pg] = await Promise.all([
+    const [posts, all, cl, r, mr, v, pr, pg, ao] = await Promise.all([
       store.posts(), store.comments(), store.commentLikes(),
       store.reactions(), store.myReactions(), store.votes(),
-      store.predictions(), store.progress(),
+      store.predictions(), store.progress(), store.animeOnly(),
     ]);
     setPost(posts.find((x) => x.id === postId) || null);
     setComments((all[postId] || []).slice().sort((a, b) => b.createdAt - a.createdAt));
@@ -44,6 +46,7 @@ export default function PostDetailScreen() {
     setVotes(v);
     setPredictions(pr);
     setProgress(pg);
+    setAnimeOnly(ao);
   }, [postId]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -130,6 +133,7 @@ export default function PostDetailScreen() {
       createdAt: Date.now(),
       likes: 0,
       parentId: replyTo?.id,
+      mangaComparisons: mangaCmpDraft || undefined,
     };
     const all = await store.comments();
     const list = [c, ...(all[post.id] || [])];
@@ -138,14 +142,19 @@ export default function PostDetailScreen() {
     await store.saveLastCommentAt(Date.now());
     setComments(list.slice().sort((a, b) => b.createdAt - a.createdAt));
     setDraft('');
+    setMangaCmpDraft(false);
     setReplyTo(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
+  // 📺 anime-only lane: hide manga-comparison comments
+  const laneComments = animeOnly ? comments.filter((c) => !c.mangaComparisons) : comments;
+  const hiddenLaneCount = comments.length - laneComments.length;
+
   const { tops, repliesByParent } = useMemo(() => {
-    const t = comments.filter((c) => !c.parentId);
+    const t = laneComments.filter((c) => !c.parentId);
     const r: Record<string, Comment[]> = {};
-    for (const c of comments) {
+    for (const c of laneComments) {
       if (c.parentId) {
         if (!r[c.parentId]) r[c.parentId] = [];
         r[c.parentId].push(c);
@@ -153,7 +162,7 @@ export default function PostDetailScreen() {
     }
     for (const k of Object.keys(r)) r[k].sort((a, b) => a.createdAt - b.createdAt);
     return { tops: t, repliesByParent: r };
-  }, [comments]);
+  }, [laneComments]);
 
   const renderComment = (c: Comment, nested = false) => (
     <View key={c.id}>
@@ -165,6 +174,7 @@ export default function PostDetailScreen() {
           <View style={s.cHead}>
             <Text style={s.cAuthor}>{c.author}</Text>
             <Text style={s.cTime}>{timeAgo(c.createdAt)}</Text>
+            {c.mangaComparisons && <Text style={s.cMangaTag}>📖</Text>}
           </View>
           <Text style={s.cBody}>{c.body}</Text>
           <View style={s.cActions}>
@@ -227,7 +237,23 @@ export default function PostDetailScreen() {
           onMarkPrediction={(m) => post.poll && markPrediction(post.poll, m)}
           expanded
         />
-        <Text style={s.cTitle}>💬 {comments.length} {comments.length === 1 ? 'reply' : 'replies'}</Text>
+        <View style={s.cTitleRow}>
+          <Text style={s.cTitle}>💬 {laneComments.length} {laneComments.length === 1 ? 'reply' : 'replies'}</Text>
+          <Pressable
+            onPress={async () => {
+              const next = !animeOnly;
+              setAnimeOnly(next);
+              await store.saveAnimeOnly(next);
+            }}
+            style={[s.laneChip, animeOnly && s.laneChipActive]}
+            accessibilityLabel="Anime-only mode: hide comments comparing to the manga"
+          >
+            <Text style={[s.laneChipText, animeOnly && s.laneChipTextActive]}>📺 Anime-only</Text>
+          </Pressable>
+        </View>
+        {hiddenLaneCount > 0 && (
+          <Text style={s.laneNote}>📺 {hiddenLaneCount} manga-comparison {hiddenLaneCount === 1 ? 'reply' : 'replies'} hidden</Text>
+        )}
         {tops.map((c) => renderComment(c))}
       </ScrollView>
       {replyTo && (
@@ -239,6 +265,17 @@ export default function PostDetailScreen() {
         </View>
       )}
       {slowMsg ? <Text style={s.slowMsg}>{slowMsg}</Text> : null}
+      {post.topic === 'Episode Talk' && (
+        <Pressable
+          onPress={() => setMangaCmpDraft(!mangaCmpDraft)}
+          style={s.mangaToggle}
+          accessibilityLabel="This comment compares the anime to the manga"
+        >
+          <Text style={[s.mangaToggleText, mangaCmpDraft && { color: C.gold }]}>
+            {mangaCmpDraft ? '☑' : '☐'} 📖 Compares to the manga
+          </Text>
+        </Pressable>
+      )}
       <View style={s.inputRow}>
         <TextInput
           style={s.input}
@@ -263,6 +300,15 @@ const s = StyleSheet.create({
   back: { color: C.primary, fontSize: 17, fontWeight: '700', width: 60 },
   headerTitle: { color: C.text, fontSize: 17, fontWeight: '800' },
   cTitle: { color: C.text, fontWeight: '800', fontSize: 15, marginHorizontal: 16, marginTop: 8, marginBottom: 4 },
+  cTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginRight: 12 },
+  laneChip: { borderWidth: 1, borderColor: C.border, backgroundColor: C.card, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5 },
+  laneChipActive: { backgroundColor: C.gold, borderColor: C.gold },
+  laneChipText: { color: C.muted, fontWeight: '700', fontSize: 11 },
+  laneChipTextActive: { color: '#fff' },
+  laneNote: { color: C.faint, fontSize: 11, marginHorizontal: 16, marginBottom: 4 },
+  cMangaTag: { fontSize: 11, marginLeft: 6 },
+  mangaToggle: { paddingHorizontal: 16, paddingVertical: 4, backgroundColor: C.surface },
+  mangaToggleText: { color: C.muted, fontSize: 12, fontWeight: '600' },
   comment: { flexDirection: 'row', backgroundColor: C.surface, borderRadius: 12, marginHorizontal: 12, marginVertical: 4, padding: 12 },
   nested: { marginLeft: 34, backgroundColor: C.card, borderLeftWidth: 2, borderLeftColor: C.secondary },
   cHead: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 4 },

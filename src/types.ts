@@ -17,6 +17,7 @@ export interface Post {
   spoiler: boolean;
   animeTag?: string;
   credit?: string; // artist credit for Art & Cosplay posts (anti-repost-theft)
+  mangaComparisons?: boolean; // author-flagged: post compares anime to manga/LN (anime-only lanes hide it)
   poll?: Poll;
   createdAt: number;
   likes: number;
@@ -33,6 +34,7 @@ export interface Comment {
   createdAt: number;
   likes: number;
   parentId?: string;
+  mangaComparisons?: boolean; // comment compares anime to manga/LN (anime-only lanes hide it)
 }
 
 export interface AnimeItem {

@@ -22,6 +22,7 @@ export default function ComposerScreen() {
   const [animeTag, setAnimeTag] = useState(prefill.animeTag || '');
   const [credit, setCredit] = useState('');
   const [spoiler, setSpoiler] = useState(false);
+  const [mangaCmp, setMangaCmp] = useState(false); // 📺 thread lanes: post compares anime to manga/LN
   const [pollOn, setPollOn] = useState(false);
   const [pollQ, setPollQ] = useState('');
   const [pollOpts, setPollOpts] = useState(['', '']);
@@ -74,6 +75,7 @@ export default function ComposerScreen() {
       title: title.trim(),
       body: body.trim(),
       spoiler,
+      mangaComparisons: topic === 'Episode Talk' ? mangaCmp : false,
       animeTag: animeTag.trim() || undefined,
       credit: credit.trim() || undefined,
       poll: pollOn
@@ -147,6 +149,13 @@ export default function ComposerScreen() {
           <Switch value={spoiler} onValueChange={setSpoiler}
             trackColor={{ true: C.primary }} thumbColor="#fff" />
         </View>
+        {topic === 'Episode Talk' && (
+          <View style={s.row}>
+            <Text style={s.rowLabel}>📖 Compares to the manga / LN</Text>
+            <Switch value={mangaCmp} onValueChange={setMangaCmp}
+              trackColor={{ true: C.gold }} thumbColor="#fff" />
+          </View>
+        )}
         <View style={s.row}>
           <Text style={s.rowLabel}>📊 Add a poll</Text>
           <Switch value={pollOn} onValueChange={setPollOn}

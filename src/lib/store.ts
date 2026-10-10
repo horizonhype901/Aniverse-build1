@@ -25,6 +25,7 @@ export const K = {
   lastCommentAt: 'aniverse:lastCommentAt:v1', // epoch ms (comment slow mode)
   studioTab: 'aniverse:studioTab:v1',   // string (avatar studio last category)
   openStudio: 'aniverse:openStudio:v1', // 'yes' → open AvatarStudio after onboarding
+  lanes: 'aniverse:animeOnlyLanes:v1',  // 'yes' → 📺 anime-only mode hides manga-comparison posts/comments
 };
 
 async function get<T>(key: string, fb: T): Promise<T> {
@@ -135,6 +136,9 @@ export const store = {
   // comment slow mode
   lastCommentAt: () => get<number>(K.lastCommentAt, 0),
   saveLastCommentAt: (t: number) => set(K.lastCommentAt, t),
+  // 📺 anime-only thread lanes
+  animeOnly: async () => (await get<string>(K.lanes, '')) === 'yes',
+  saveAnimeOnly: (b: boolean) => set(K.lanes, b ? 'yes' : ''),
   // onboarding
   onboarded: () => get<string | null>(K.onboarded, null),
   setOnboarded: () => set(K.onboarded, 'yes'),

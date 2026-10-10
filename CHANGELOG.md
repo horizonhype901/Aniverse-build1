@@ -100,3 +100,17 @@ Each entry cites the research evidence that motivated it.
 - Verified: tsc + expo-doctor 21/21 green.
 
 <!-- new entries go below -->
+
+### 📅 Airing This Week calendar (Discover)
+- New section groups Currently Airing titles by broadcast day with
+  timezone-aware countdowns ("in 2h 14m", "🔴 airing around now") — computed
+  fully on-device from Jikan's JST `broadcast.day`/`broadcast.time`
+  (handles Jikan's "24:00"-style times). No more manual JST math.
+- Graceful offline: the section hides when live broadcast data is missing.
+- Evidence: MAL still has no native timezone-aware airing countdown (Feb 2025
+  users still begging + third-party workarounds) —
+  https://myanimelist.net/forum/?topicid=1759733&msgid=71901598
+- New: `src/lib/airing.ts`. Touched: `src/types.ts` (AnimeItem.broadcastDay/
+  broadcastTime), `src/lib/api.ts` (normAnime), `src/screens/DiscoverScreen.tsx`.
+  Verified: tsc + expo-doctor 21/21 green; 13/13 unit checks on day parsing,
+  next-airing math (incl. 24:00+/25:30 rollover), countdown + day labels.
