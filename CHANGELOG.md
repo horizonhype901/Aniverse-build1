@@ -101,6 +101,24 @@ Each entry cites the research evidence that motivated it.
 
 <!-- new entries go below -->
 
+### 📺 Dual thread lanes — Anime-only mode (Composer + Feed + PostDetail)
+- Authors can flag Episode Talk posts/comments as "📖 Compares to the manga /
+  LN" (composer switch; thread-level toggle under the comment box).
+- Viewers get a persistent "📺 Anime-only" lane toggle (Feed chip + per-thread
+  chip, stored on-device): flagged posts/comments are hidden with a
+  "N manga-comparison replies hidden" note. Flagged comments show a 📖 badge
+  so anime-only users can spot source-reader talk at a glance.
+- Evidence: MAL episode threads dominated by source-readers declaring
+  adaptations bad for cut details —
+  https://myanimelist.net/forum/?topicid=1203181&msgid=31732631 ;
+  2024 threads calling out manga readers nitpicking adaptations "to look cool" —
+  https://myanimelist.net/forum/?topicid=2038681&msgid=67219009 ;
+  anime-only spoiler-survival guides rely on heavily-moderated Discords —
+  https://myanimelist.net/forum/?topicid=1911903
+- Touched: `src/types.ts` (Post/Comment.mangaComparisons), `src/lib/store.ts`
+  (lanes key + accessors), `ComposerScreen.tsx`, `FeedScreen.tsx`,
+  `PostDetailScreen.tsx`. Verified: tsc + expo-doctor 21/21 green.
+
 ### 📅 Airing This Week calendar (Discover)
 - New section groups Currently Airing titles by broadcast day with
   timezone-aware countdowns ("in 2h 14m", "🔴 airing around now") — computed

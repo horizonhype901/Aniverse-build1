@@ -7,11 +7,37 @@ import { useNavigation } from '@react-navigation/native';
 import { C, R } from '../theme';
 import { searchAnime, seasonNow, topAiring } from '../lib/api';
 import { FALLBACK_ANIME, VIBES, ANIME_VIBES, Vibe } from '../data/seed';
-import { AnimeItem } from '../types';
+import { AnimeItem, WatchEntry } from '../types';
 import AnimeCard from '../components/AnimeCard';
 import { nextAiringAt, countdownLabel, dayLabel, AiringSoon } from '../lib/airing';
+import { tasteMatches, TastePick } from '../lib/tastematch';
+import { store } from '../lib/store';
 
-/** "📅 Airing This Week" — timezone-aware broadcast countdowns from Jikan data. */
+/** "🎯 For You" — on-device taste-match picks with the reason shown. */
+function TasteRow({ picks, onPress }: { picks: TastePick[]; onPress: (a: AnimeItem) => void }) {
+  if (picks.length === 0) return null;
+  return (
+    <View style={s.section}>
+      <Text style={s.sectionTitle}>🎯 For You</Text>
+      <Text style={s.calHint}>Matched to YOUR watchlist by genre — never popularity-ranked.</Text>
+      <FlatList
+        horizontal
+        data={picks}
+        keyExtractor={(x) => String(x.anime.id)}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 12 }}
+        renderItem={({ item }) => (
+          <View style={{ width: 120, marginRight: 12 }}>
+            <AnimeCard anime={item.anime} onPress={() => onPress(item.anime)} />
+            <Text style={s.tasteWhy} numberOfLines={2}>
+              Because you watched {item.becauseOf}
+            </Text>
+          </View>
+        )}
+      />
+    </View>
+  );
+}
 function AiringCalendar({ items, onPress }: { items: AnimeItem[]; onPress: (a: AnimeItem) => void }) {
   const soon: AiringSoon[] = [];
   for (const a of items) {
@@ -81,19 +107,23 @@ export default function DiscoverScreen() {
   const [error, setError] = useState('');
   const [offline, setOffline] = useState(false);
   const [vibe, setVibe] = useState<'All' | Vibe>('All');
+  const [picks, setPicks] = useState<TastePick[]>([]);
 
   const load = async () => {
     setLoading(true);
     setError('');
     setOffline(false);
     try {
-      const [a, b] = await Promise.all([topAiring(), seasonNow()]);
+      const [a, b, w] = await Promise.all([topAiring(), seasonNow(), store.watchlist()]);
       setAiring(a);
       setSeason(b);
+      setPicks(tasteMatches(w, [...a, ...b, ...FALLBACK_ANIME]));
     } catch (e: any) {
       // API unreachable — fall back to the bundled catalog so the tab still works
       setAiring(FALLBACK_ANIME);
       setSeason([...FALLBACK_ANIME].reverse());
+      const w = await store.watchlist();
+      setPicks(tasteMatches(w, FALLBACK_ANIME));
       setOffline(true);
     }
     setLoading(false);
@@ -215,6 +245,7 @@ export default function DiscoverScreen() {
                   </View>
                 </Pressable>
               )}
+              <TasteRow picks={picks} onPress={open} />
               <Section title="🔥 Airing Now" items={airing} onPress={open} />
               <AiringCalendar items={airing} onPress={open} />
               <Section title="📅 This Season" items={season} onPress={open} />
@@ -247,6 +278,7 @@ const s = StyleSheet.create({
   calRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 5 },
   calTitle: { color: C.text, fontSize: 14, fontWeight: '600', flex: 1, marginRight: 8 },
   calWhen: { color: C.primary, fontSize: 12, fontWeight: '700' },
+  tasteWhy: { color: C.faint, fontSize: 11, marginTop: 4, lineHeight: 14 },
   errBox: { alignItems: 'center', marginTop: 60, paddingHorizontal: 30 },
   errText: { color: C.muted, textAlign: 'center', marginBottom: 12 },
   retry: { backgroundColor: C.primary, borderRadius: 20, paddingHorizontal: 24, paddingVertical: 10 },
