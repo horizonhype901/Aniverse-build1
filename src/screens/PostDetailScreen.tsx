@@ -24,7 +24,7 @@ export default function PostDetailScreen() {
   const [myReactions, setMyReactions] = useState<Record<string, string>>({});
   const [votes, setVotes] = useState<Record<string, number>>({});
   const [predictions, setPredictions] = useState<Record<string, 'right' | 'wrong'>>({});
-  const [progress, setProgress] = useState<Record<number, ProgressEntry>>({});
+  const [progress, setProgress] = useState<Record<string, ProgressEntry>>({});
   const [draft, setDraft] = useState('');
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const [slowMsg, setSlowMsg] = useState('');
@@ -204,6 +204,18 @@ export default function PostDetailScreen() {
     );
   }
 
+  // 🙈 one-tap spoiler shield from a thread
+  const quickShield = async (tag: string) => {
+    const pg = await store.progress();
+    const key = Object.keys(pg).find(
+      (k) => pg[k].title.toLowerCase() === tag.toLowerCase()
+    ) || `t:${tag.toLowerCase()}`;
+    const cur = pg[key] || { title: tag, watched: 0, hideSpoilers: false };
+    pg[key] = { ...cur, hideSpoilers: true, title: cur.title || tag };
+    await store.saveProgress(pg);
+    setProgress(pg);
+  };
+
   const strict =
     post.spoiler &&
     !!post.animeTag &&
@@ -234,6 +246,7 @@ export default function PostDetailScreen() {
           onReact={toggleReaction}
           onOpen={() => {}}
           onVote={(i) => post.poll && castVote(post.poll, i)}
+          onShieldAnime={quickShield}
           onMarkPrediction={(m) => post.poll && markPrediction(post.poll, m)}
           expanded
         />

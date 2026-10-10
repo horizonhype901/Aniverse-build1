@@ -101,6 +101,23 @@ Each entry cites the research evidence that motivated it.
 
 <!-- new entries go below -->
 
+### 🎯 For You — on-device taste-match recommender (Discover)
+- New row scores the catalog against YOUR watchlist by genre overlap
+  (watching/completed full weight, plan/on-hold half, dropped = no signal),
+  tie-broken toward higher-scored titles — every pick shows its reason
+  ("Because you watched Frieren"). Nothing leaves the phone; no
+  popularity-ranked score bands.
+- Evidence: MAL's "suggestions" are just unrated anime in a score band, not
+  taste-based, skewing to already-famous titles —
+  https://myanimelist.net/forum/?topicid=2252571&msgid=73843329 ;
+  good older anime stay "buried beneath more recent and popular anime" —
+  https://myanimelist.net/forum/?topicid=2136375&msgid=70306961
+- New: `src/lib/tastematch.ts`. Touched: `src/screens/DiscoverScreen.tsx`
+  (TasteRow, loads watchlist alongside live data; offline falls back to the
+  bundled catalog). Verified: tsc + expo-doctor 21/21 green; 5/5 unit checks
+  (overlap ranking, dropped-exclusion, in-list exclusion, attribution, empty
+  watchlist).
+
 ### 📺 Dual thread lanes — Anime-only mode (Composer + Feed + PostDetail)
 - Authors can flag Episode Talk posts/comments as "📖 Compares to the manga /
   LN" (composer switch; thread-level toggle under the comment box).

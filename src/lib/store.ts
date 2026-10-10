@@ -127,9 +127,9 @@ export const store = {
   // daily check-ins (YYYY-MM-DD)
   checkins: () => get<string[]>(K.checkins, []),
   saveCheckins: (c: string[]) => set(K.checkins, c),
-  // per-anime watch progress
-  progress: () => get<Record<number, ProgressEntry>>(K.progress, {}),
-  saveProgress: (p: Record<number, ProgressEntry>) => set(K.progress, p),
+  // per-anime watch progress (keys are MAL ids, or `t:<lowercased title>` for title-only shields)
+  progress: () => get<Record<string, ProgressEntry>>(K.progress, {}),
+  saveProgress: (p: Record<string, ProgressEntry>) => set(K.progress, p),
   // manga shelf
   manga: () => get<MangaEntry[]>(K.manga, []),
   saveManga: (m: MangaEntry[]) => set(K.manga, m),

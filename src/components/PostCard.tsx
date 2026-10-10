@@ -133,6 +133,7 @@ interface Props {
   expanded?: boolean;
   onAvatarPress?: () => void;
   shieldHint?: string;
+  onShieldAnime?: (animeTag: string) => void; // one-tap "hide all spoilers for this anime"
 }
 
 export default function PostCard(p: Props) {
@@ -184,20 +185,42 @@ export default function PostCard(p: Props) {
         </View>
       </View>
       {spoilerHidden && p.strictSpoiler ? (
-        <Pressable style={s.spoilerBox} onPress={tapSpoiler}>
-          <Text style={s.spoilerText}>
-            {confirming ? confirmText : '⚠️ Spoiler hidden — tap to reveal'}
-          </Text>
-        </Pressable>
+        <>
+          <Pressable style={s.spoilerBox} onPress={tapSpoiler}>
+            <Text style={s.spoilerText}>
+              {confirming ? confirmText : '⚠️ Spoiler hidden — tap to reveal'}
+            </Text>
+          </Pressable>
+          {p.onShieldAnime && post.animeTag && (
+            <Pressable
+              style={s.shieldBtn}
+              onPress={() => p.onShieldAnime!(post.animeTag!)}
+              accessibilityLabel={`Hide all spoilers for ${post.animeTag}`}
+            >
+              <Text style={s.shieldBtnText}>🙈 Hide all spoilers for {post.animeTag}</Text>
+            </Pressable>
+          )}
+        </>
       ) : (
         <>
           <Text style={s.title}>{post.title}</Text>
           {spoilerHidden ? (
-            <Pressable style={s.spoilerBox} onPress={tapSpoiler}>
-              <Text style={s.spoilerText}>
-                {confirming && p.strictSpoiler ? confirmText : '⚠️ Spoiler hidden — tap to reveal'}
-              </Text>
-            </Pressable>
+            <>
+              <Pressable style={s.spoilerBox} onPress={tapSpoiler}>
+                <Text style={s.spoilerText}>
+                  {confirming && p.strictSpoiler ? confirmText : '⚠️ Spoiler hidden — tap to reveal'}
+                </Text>
+              </Pressable>
+              {p.onShieldAnime && post.animeTag && (
+                <Pressable
+                  style={s.shieldBtn}
+                  onPress={() => p.onShieldAnime!(post.animeTag!)}
+                  accessibilityLabel={`Hide all spoilers for ${post.animeTag}`}
+                >
+                  <Text style={s.shieldBtnText}>🙈 Hide all spoilers for {post.animeTag}</Text>
+                </Pressable>
+              )}
+            </>
           ) : (
             <Text style={s.body} numberOfLines={p.expanded ? undefined : 4}>{post.body}</Text>
           )}
@@ -275,6 +298,8 @@ const s = StyleSheet.create({
   body: { color: C.muted, fontSize: 14, lineHeight: 20 },
   spoilerBox: { backgroundColor: C.spoiler, borderRadius: R.md, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: C.border, borderStyle: 'dashed' },
   spoilerText: { color: C.gold, fontWeight: '700', textAlign: 'center' },
+  shieldBtn: { marginTop: 8, alignItems: 'center', paddingVertical: 6 },
+  shieldBtnText: { color: C.muted, fontSize: 12, fontWeight: '700' },
   animeTag: { alignSelf: 'flex-start', backgroundColor: C.card2, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, marginTop: 8 },
   animeTagText: { color: C.accent, fontSize: 12, fontWeight: '600' },
   reactRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10, flexWrap: 'wrap' },

@@ -29,7 +29,7 @@ export default function FeedScreen() {
   const [votes, setVotes] = useState<Record<string, number>>({});
   const [predictions, setPredictions] = useState<Record<string, 'right' | 'wrong'>>({});
   const [mutes, setMutes] = useState<Mutes>({ words: [], anime: [] });
-  const [progress, setProgress] = useState<Record<number, ProgressEntry>>({});
+  const [progress, setProgress] = useState<Record<string, ProgressEntry>>({});
   const [topic, setTopic] = useState<'All' | Topic>('All');
   const [sort, setSort] = useState<'hot' | 'new'>('hot');
   const [refreshing, setRefreshing] = useState(false);
@@ -155,6 +155,18 @@ export default function FeedScreen() {
     return `${e.watched}${e.total ? ` of ${e.total}` : ''}`;
   };
 
+  // 🙈 one-tap spoiler shield: enable hideSpoilers for an anime title from the feed
+  const quickShield = async (tag: string) => {
+    const pg = await store.progress();
+    const key = Object.keys(pg).find(
+      (k) => pg[k].title.toLowerCase() === tag.toLowerCase()
+    ) || `t:${tag.toLowerCase()}`;
+    const cur = pg[key] || { title: tag, watched: 0, hideSpoilers: false };
+    pg[key] = { ...cur, hideSpoilers: true, title: cur.title || tag };
+    await store.saveProgress(pg);
+    setProgress(pg);
+  };
+
   const mutedWords = useMemo(() => mutes.words.map((w) => w.toLowerCase()), [mutes]);
   const mutedAnime = useMemo(() => new Set(mutes.anime.map((a) => a.toLowerCase())), [mutes]);
 
@@ -251,6 +263,7 @@ export default function FeedScreen() {
               onOpen={() => nav.navigate('PostDetail', { postId: item.id })}
               onAvatarPress={() => nav.navigate('UserProfile', { author: item.author })}
               shieldHint={shieldHintFor(item.animeTag)}
+              onShieldAnime={quickShield}
               onVote={(i) => item.poll && castVote(item.poll, i)}
               onMarkPrediction={(m) => item.poll && markPrediction(item.poll, m)}
             />
